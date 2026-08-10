@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+:root {
+  /* Zillow-inspired real-estate system (not a copy of trademarks) */
+  --zg-blue: #006aff;
+  --zg-blue-hover: #0058d6;
+  --zg-blue-soft: #e8f1ff;
+  --zg-navy: #1a1a2e;
+  --zg-ink: #2a2a33;
+  --zg-muted: #6a6a72;
+  --zg-line: #e0e0e5;
+  --zg-surface: #ffffff;
+  --zg-canvas: #f5f6f8;
+  --zg-success: #1a7f37;
+  --background: var(--zg-canvas);
+  --foreground: var(--zg-ink);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-zg-blue: var(--zg-blue);
+  --color-zg-soft: var(--zg-blue-soft);
+  --color-zg-navy: var(--zg-navy);
+  --color-zg-ink: var(--zg-ink);
+  --color-zg-muted: var(--zg-muted);
+  --color-zg-line: var(--zg-line);
+  --color-zg-canvas: var(--zg-canvas);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --spacing-90: 22.5rem;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), "Segoe UI", Helvetica, Arial, sans-serif;
+  min-height: 100dvh;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c8c8d0;
+  border-radius: 999px;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.28s ease-out;
+}
+
+@keyframes market-pop {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-market-pop {
+  animation: market-pop 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes market-enter {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-market-enter {
+  animation: market-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes market-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+.animate-market-exit {
+  animation: market-exit 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Zillow-like panel shell */
+.zg-panel {
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-line);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+.zg-card {
+  background: var(--zg-surface);
+  border: 1px solid var(--zg-line);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.zg-card:hover {
+  border-color: #c9d7f0;
+  box-shadow: 0 4px 14px rgba(0, 106, 255, 0.1);
+}
+
+.zg-btn-primary {
+  background: var(--zg-blue);
+  color: white;
+  border-radius: 999px;
+  font-weight: 700;
+  transition: background 0.15s ease;
+}
+
+.zg-btn-primary:hover {
+  background: var(--zg-blue-hover);
+}
+
+.zg-chip {
+  border-radius: 999px;
+  border: 1px solid var(--zg-line);
+  background: white;
+  font-weight: 600;
+  color: var(--zg-ink);
+}
+
+.zg-chip-active {
+  border-color: var(--zg-blue);
+  background: var(--zg-blue-soft);
+  color: var(--zg-blue);
+}
+
+.zg-input {
+  border: 1px solid var(--zg-line);
+  border-radius: 8px;
+  background: white;
+  outline: none;
+}
+
+.zg-input:focus {
+  border-color: var(--zg-blue);
+  box-shadow: 0 0 0 3px rgba(0, 106, 255, 0.15);
+}
+
+@media print {
+  body {
+    background: white !important;
+  }
+}
