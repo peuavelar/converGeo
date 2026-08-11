@@ -33,7 +33,7 @@ export default function MapControls({
           <button
             type="button"
             onClick={onTempoDeslocamento}
-            className={`rounded-xl border px-2 py-1.5 text-left text-[10px] font-bold shadow-md transition ${
+            className={`min-h-[44px] rounded-xl border px-3 py-2 text-left text-[11px] font-bold shadow-md transition active:scale-[0.98] ${
               tempoDeslocamentoActive
                 ? "border-[#006aff] bg-[#006aff] text-white"
                 : "border-[#d1d1d5] bg-white text-[#2a2a33] hover:border-[#006aff] hover:bg-[#e8f1ff] hover:text-[#006aff]"
@@ -48,7 +48,7 @@ export default function MapControls({
           <button
             type="button"
             onClick={onZoomIn}
-            className="flex h-8 w-8 items-center justify-center border-b border-[#e8e8ed] text-base font-bold text-[#2a2a33] hover:bg-[#e8f1ff] hover:text-[#006aff]"
+            className="flex h-11 w-11 items-center justify-center border-b border-[#e8e8ed] text-lg font-bold text-[#2a2a33] hover:bg-[#e8f1ff] hover:text-[#006aff] active:bg-[#e8f1ff]"
             aria-label="Aumentar zoom"
             title="Zoom +"
           >
@@ -57,7 +57,7 @@ export default function MapControls({
           <button
             type="button"
             onClick={onZoomOut}
-            className="flex h-8 w-8 items-center justify-center text-base font-bold text-[#2a2a33] hover:bg-[#e8f1ff] hover:text-[#006aff]"
+            className="flex h-11 w-11 items-center justify-center text-lg font-bold text-[#2a2a33] hover:bg-[#e8f1ff] hover:text-[#006aff] active:bg-[#e8f1ff]"
             aria-label="Diminuir zoom"
             title="Zoom −"
           >
@@ -69,7 +69,7 @@ export default function MapControls({
       <button
         type="button"
         onClick={() => setCurrentStyle(isDark ? "voyager" : "dark")}
-        className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-bold shadow-md transition sm:px-3 sm:text-[11px] ${
+        className={`flex min-h-[44px] items-center gap-1.5 rounded-full border px-3 py-2 text-[11px] font-bold shadow-md transition active:scale-[0.98] sm:px-3.5 ${
           isDark
             ? "border-[#1a2a44] bg-[#0a1220] text-white"
             : "border-[#d1d1d5] bg-white text-[#2a2a33] hover:border-[#006aff]"
@@ -98,7 +98,7 @@ export default function MapControls({
       <button
         type="button"
         onClick={() => setColorMode(colorMode === "total" ? "ocean" : "total")}
-        className={`rounded-full border px-2.5 py-1 text-[10px] font-bold shadow-md sm:px-3 sm:py-1.5 sm:text-[11px] ${
+        className={`min-h-[44px] rounded-full border px-3 py-2 text-[11px] font-bold shadow-md active:scale-[0.98] ${
           colorMode === "ocean"
             ? "border-[#006aff] bg-[#e8f1ff] text-[#006aff]"
             : "border-[#d1d1d5] bg-white text-[#6a6a72]"

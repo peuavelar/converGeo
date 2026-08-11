@@ -59,10 +59,10 @@ export default function ZillowFilterBar({
               key={t.id}
               type="button"
               onClick={() => setTool(t.id)}
-              className={`shrink-0 rounded-full px-2.5 py-1.5 text-[11px] font-bold whitespace-nowrap sm:px-3 sm:text-xs ${
+              className={`shrink-0 min-h-[40px] rounded-full px-3 py-2 text-[11px] font-bold whitespace-nowrap sm:min-h-0 sm:px-3 sm:py-1.5 sm:text-xs ${
                 tool === t.id
                   ? "bg-[#006aff] text-white"
-                  : "bg-[#f5f5f7] text-[#2a2a33] hover:bg-[#e8e8ed]"
+                  : "bg-[#f5f5f7] text-[#2a2a33] hover:bg-[#e8e8ed] active:bg-[#e8e8ed]"
               }`}
             >
               {t.id === "rotas" ? (
@@ -86,7 +86,7 @@ export default function ZillowFilterBar({
         onSubmit={onSearch}
         className="flex min-w-0 flex-1 items-center gap-2"
       >
-        <div className="group flex min-w-0 flex-1 items-center gap-2 rounded-md border border-transparent bg-transparent px-1.5 py-1 transition-[border-color,box-shadow,background-color] duration-200 ease-out hover:bg-[#f5f5f7]/80 focus-within:border-[#006aff] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(0,106,255,0.18)]">
+        <div className="group flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-md border border-transparent bg-transparent px-1.5 py-1 transition-[border-color,box-shadow,background-color] duration-200 ease-out hover:bg-[#f5f5f7]/80 focus-within:border-[#006aff] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(0,106,255,0.18)]">
           <svg
             viewBox="0 0 24 24"
             className="h-4 w-4 shrink-0 text-[#8a8a93] transition-colors duration-200 group-focus-within:text-[#006aff]"
@@ -119,7 +119,7 @@ export default function ZillowFilterBar({
           <button
             type="submit"
             disabled={isSearching || !searchQuery.trim()}
-            className="shrink-0 rounded-md px-2 py-1 text-[11px] font-bold text-[#006aff] transition-opacity duration-150 hover:bg-[#e8f1ff] disabled:pointer-events-none disabled:opacity-0"
+            className="shrink-0 min-h-[40px] rounded-md px-2.5 py-2 text-[11px] font-bold text-[#006aff] transition-opacity duration-150 hover:bg-[#e8f1ff] active:bg-[#e8f1ff] disabled:pointer-events-none disabled:opacity-0"
             aria-label="Buscar"
           >
             Buscar

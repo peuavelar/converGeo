@@ -181,7 +181,7 @@ export function ZillowMobileTabBar({ active, onChange }: Props) {
             key={item.id}
             type="button"
             onClick={() => onChange(item.id)}
-            className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 transition ${
+            className={`flex min-h-[48px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1 transition ${
               isActive ? "text-[#006aff]" : "text-[#6a6a72]"
             }`}
           >

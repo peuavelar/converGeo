@@ -1,13 +1,16 @@
 {
   "name": "convergeo-web",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "vercel --prod"
+    "deploy": "vercel --prod",
+    "seed:benchmarks": "tsx scripts/seed-benchmarks.ts",
+    "compare:scores": "tsx scripts/compare-opportunity-scores.ts",
+    "test:benchmarks": "tsx --test lib/benchmarks/rules/rules.test.ts lib/benchmarks/calibrate.test.ts"
   },
   "dependencies": {
     "@deck.gl/core": "^9.3.6",
@@ -29,6 +32,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5"
   }
 }

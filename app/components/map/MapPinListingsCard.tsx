@@ -28,6 +28,7 @@ type Props = {
   onSelect: (listing: MarketplaceListing) => void;
   onClose: () => void;
   onSeeAll?: () => void;
+  onOpenNeighborhood?: () => void;
 };
 
 function dist2(aLat: number, aLng: number, bLat: number, bLng: number) {
@@ -62,7 +63,7 @@ export function pickListingsForPin(
   return [...rank(inRegion), ...rest].slice(0, limit);
 }
 
-/** Card flutuante acima do pino com 3 imóveis do marketplace. */
+/** Card flutuante acima do pino — desktop ancorado no mapa; mobile em folha estável. */
 export default function MapPinListingsCard({
   lat,
   lng,
@@ -73,6 +74,7 @@ export default function MapPinListingsCard({
   onSelect,
   onClose,
   onSeeAll,
+  onOpenNeighborhood,
 }: Props) {
   const listings = useMemo(
     () => pickListingsForPin(lat, lng, regionId, 3),
@@ -80,6 +82,7 @@ export default function MapPinListingsCard({
   );
 
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const isMobile = mapSize.width > 0 && mapSize.width < 768;
 
   useEffect(() => {
     if (mapSize.width < 8 || mapSize.height < 8) {
@@ -103,15 +106,108 @@ export default function MapPinListingsCard({
     }
   }, [lat, lng, viewState, mapSize]);
 
-  if (!pos || listings.length === 0) return null;
+  if (listings.length === 0) return null;
+  if (!isMobile && !pos) return null;
 
-  // Evita sair da tela
+  const card = (
+    <div className="overflow-hidden rounded-2xl border border-[#d1d1d5] bg-white shadow-[0_12px_40px_rgba(10,18,32,0.22)]">
+      <div className="flex items-start justify-between gap-2 border-b border-[#eef1f6] px-3 py-2.5">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[#006aff]">
+            À venda por aqui
+          </p>
+          <p className="truncate text-sm font-bold text-[#2a2a33]">
+            {regionName || "Região"}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-bold text-[#6a6a72] hover:bg-[#f5f5f7] active:bg-[#e8e8ed]"
+          aria-label="Fechar"
+        >
+          ✕
+        </button>
+      </div>
+
+      <ul className="max-h-[min(42vh,280px)] divide-y divide-[#eef1f6] overflow-y-auto overscroll-contain">
+        {listings.map((l) => (
+          <li key={l.id}>
+            <button
+              type="button"
+              onClick={() => onSelect(l)}
+              className="flex min-h-[56px] w-full items-center gap-2.5 px-3 py-2.5 text-left transition hover:bg-[#f5f9ff] active:bg-[#e8f1ff]"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={l.photo}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded-lg object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-bold text-[#2a2a33]">
+                  {l.title}
+                </p>
+                <p className="text-[10px] text-[#6a6a72]">
+                  {l.beds} qtos · {l.baths} ban · {l.area} m²
+                </p>
+                <p className="mt-0.5 text-xs font-bold text-[#006aff]">
+                  {marketplacePriceLabel(l.price)}
+                </p>
+              </div>
+              <span className="shrink-0 text-[#006aff]" aria-hidden>
+                ›
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <div className="divide-y divide-[#eef1f6] border-t border-[#eef1f6]">
+        {onOpenNeighborhood && (
+          <button
+            type="button"
+            onClick={onOpenNeighborhood}
+            className="min-h-[48px] w-full py-3 text-center text-xs font-bold text-[#2a2a33] hover:bg-[#f5f5f7] active:bg-[#e8e8ed]"
+          >
+            Oportunidades do bairro
+          </button>
+        )}
+        {onSeeAll && (
+          <button
+            type="button"
+            onClick={onSeeAll}
+            className="min-h-[48px] w-full py-3 text-center text-xs font-bold text-[#006aff] hover:bg-[#f5f9ff] active:bg-[#e8f1ff]"
+          >
+            Ver todos na região
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  // iPhone / Android: folha estável no fundo do mapa (evita card fora da tela)
+  if (isMobile) {
+    return (
+      <div
+        className="pointer-events-auto absolute inset-x-2 z-30 animate-fade-in"
+        style={{
+          bottom: "max(0.5rem, env(safe-area-inset-bottom, 0px))",
+        }}
+        role="dialog"
+        aria-label={`Imóveis em ${regionName || "região"}`}
+      >
+        {card}
+      </div>
+    );
+  }
+
   const cardW = Math.min(288, mapSize.width - 16);
   const left = Math.max(
     8,
-    Math.min(pos.x - cardW / 2, mapSize.width - cardW - 8),
+    Math.min((pos?.x ?? 0) - cardW / 2, mapSize.width - cardW - 8),
   );
-  const top = Math.max(8, pos.y - 12 - 210);
+  const top = Math.max(8, (pos?.y ?? 0) - 12 - 210);
 
   return (
     <div
@@ -120,77 +216,13 @@ export default function MapPinListingsCard({
       role="dialog"
       aria-label={`Imóveis em ${regionName || "região"}`}
     >
-      <div className="overflow-hidden rounded-2xl border border-[#d1d1d5] bg-white shadow-[0_12px_40px_rgba(10,18,32,0.22)]">
-        <div className="flex items-start justify-between gap-2 border-b border-[#eef1f6] px-3 py-2">
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[#006aff]">
-              À venda por aqui
-            </p>
-            <p className="truncate text-sm font-bold text-[#2a2a33]">
-              {regionName || "Região"}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#6a6a72] hover:bg-[#f5f5f7]"
-            aria-label="Fechar"
-          >
-            ✕
-          </button>
-        </div>
-
-        <ul className="divide-y divide-[#eef1f6]">
-          {listings.map((l) => (
-            <li key={l.id}>
-              <button
-                type="button"
-                onClick={() => onSelect(l)}
-                className="flex w-full items-center gap-2.5 px-2.5 py-2 text-left transition hover:bg-[#f5f9ff] active:bg-[#e8f1ff]"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={l.photo}
-                  alt=""
-                  className="h-12 w-12 shrink-0 rounded-lg object-cover"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-bold text-[#2a2a33]">
-                    {l.title}
-                  </p>
-                  <p className="text-[10px] text-[#6a6a72]">
-                    {l.beds} qtos · {l.baths} ban · {l.area} m²
-                  </p>
-                  <p className="mt-0.5 text-xs font-bold text-[#006aff]">
-                    {marketplacePriceLabel(l.price)}
-                  </p>
-                </div>
-                <span className="shrink-0 text-[#006aff]" aria-hidden>
-                  ›
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-
-        {onSeeAll && (
-          <button
-            type="button"
-            onClick={onSeeAll}
-            className="w-full border-t border-[#eef1f6] py-2 text-center text-[11px] font-bold text-[#006aff] hover:bg-[#f5f9ff]"
-          >
-            Ver todos na região
-          </button>
-        )}
-      </div>
-
-      {/* Ponteiro apontando para o pino */}
+      {card}
       <div
         className="mx-auto -mt-px h-0 w-0 border-x-[8px] border-t-[9px] border-x-transparent border-t-white drop-shadow-sm"
         style={{
           marginLeft: Math.max(
             16,
-            Math.min(pos.x - left - 8, cardW - 24),
+            Math.min((pos?.x ?? 0) - left - 8, cardW - 24),
           ),
         }}
         aria-hidden

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import AddressSuggest from "./AddressSuggest";
 import { BUSINESS_SEGMENTS } from "../data/segments";
 import type { AddressSuggestion } from "../data/streets";
@@ -30,33 +31,52 @@ interface FilterPanelProps {
   viewMode: "single" | "top" | "compare" | "heatmap" | null;
   handleTop5Click: () => void;
   handleHeatmapClick: () => void;
-  handleCompareClick: () => void;
+  /** Executa comparação A/B com os textos digitados. */
+  onRunCompare: (localA: string, localB: string) => Promise<void> | void;
+  compareRunning?: boolean;
+  compareError?: string;
 }
 
+const fieldClass =
+  "mt-1.5 w-full rounded-xl border border-[#e6e6ea] bg-white px-3 py-2.5 text-sm text-[#0a0a0b] outline-none transition focus:border-[#0a0a0b] focus:ring-2 focus:ring-[#0a0a0b]/12";
+
 export default function FilterPanel(props: FilterPanelProps) {
+  const [localA, setLocalA] = useState("");
+  const [localB, setLocalB] = useState("");
+
   return (
-    <div className="flex flex-col space-y-3 print:hidden">
-      <form onSubmit={props.handleAddressSearch} className="space-y-1">
+    <div className="flex flex-col gap-3.5 print:hidden">
+      <div className="rounded-xl border border-[#e6e6ea] bg-white px-3 py-2.5 shadow-[0_1px_0_rgba(10,10,11,0.04)]">
+        <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#8a8a93]">
+          Cobertura
+        </p>
+        <p className="mt-0.5 text-xs font-semibold text-[#0a0a0b]">
+          Salvador · Lauro de Freitas (RMS)
+        </p>
+      </div>
+
+      <form onSubmit={props.handleAddressSearch} className="space-y-1.5">
         <label
           htmlFor="endereco-negocio"
-          className="block text-xs font-semibold text-slate-600"
+          className="block text-xs font-bold text-[#6a6a72]"
         >
-          Endereço
+          Endereço (análise pontual)
         </label>
-        <div className="flex gap-1.5">
+        <div className="flex gap-2">
           <AddressSuggest
             inputId="endereco-negocio"
             value={props.searchQuery}
             onChange={props.setSearchQuery}
             onPick={props.onPickAddress}
             isSearching={props.isSearching}
+            placeholder="Bairro ou rua em Salvador / Lauro"
           />
           <button
             type="submit"
             disabled={props.isSearching}
-            className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            className="min-h-[44px] shrink-0 rounded-xl bg-[#0a0a0b] px-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#1c1c1f] active:scale-[0.98] disabled:opacity-60"
           >
-            {props.isSearching ? "..." : "OK"}
+            {props.isSearching ? "…" : "OK"}
           </button>
         </div>
       </form>
@@ -66,14 +86,14 @@ export default function FilterPanel(props: FilterPanelProps) {
         </p>
       )}
 
-      <label className="block text-xs font-semibold text-slate-600">
+      <label className="block text-xs font-bold text-[#6a6a72]">
         Tipo de empreendimento
         <select
           value={props.propertyType}
           onChange={(e) =>
             props.setPropertyType(e.target.value as PropertyType)
           }
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none focus:border-blue-500"
+          className={fieldClass}
         >
           <optgroup label="Comercial">
             {COMMERCIAL_PROPERTY_TYPES.map((t) => (
@@ -85,12 +105,12 @@ export default function FilterPanel(props: FilterPanelProps) {
         </select>
       </label>
 
-      <label className="block text-xs font-semibold text-slate-600">
+      <label className="block text-xs font-bold text-[#6a6a72]">
         Segmento
         <select
           value={props.activeSegment}
           onChange={(e) => props.setActiveSegment(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500"
+          className={`${fieldClass} font-semibold`}
         >
           {BUSINESS_SEGMENTS.map((segment) => (
             <option key={segment.value} value={segment.value}>
@@ -99,17 +119,24 @@ export default function FilterPanel(props: FilterPanelProps) {
           ))}
         </select>
       </label>
-      <p className="text-[11px] text-slate-500">
+      <p className="-mt-1 text-[11px] text-[#8a8a93]">
         CNAE ref.:{" "}
-        {BUSINESS_SEGMENTS.find((s) => s.value === props.activeSegment)?.cnae ??
-          "—"}
+        <span className="font-semibold text-[#6a6a72]">
+          {BUSINESS_SEGMENTS.find((s) => s.value === props.activeSegment)
+            ?.cnae ?? "—"}
+        </span>
       </p>
 
-      <details className="rounded-lg border border-slate-200 bg-white p-2.5">
-        <summary className="cursor-pointer text-sm font-semibold text-slate-800">
-          Ajustar pesos do motor
+      <details className="group rounded-xl border border-[#e6e6ea] bg-white open:shadow-sm">
+        <summary className="cursor-pointer list-none px-3 py-2.5 text-sm font-bold text-[#0a0a0b] marker:content-none [&::-webkit-details-marker]:hidden">
+          <span className="flex items-center justify-between gap-2">
+            Ajustar pesos do motor
+            <span className="text-[#8a8a93] transition group-open:rotate-90">
+              ›
+            </span>
+          </span>
         </summary>
-        <div className="mt-2 space-y-2">
+        <div className="space-y-3 border-t border-[#f0f0f2] px-3 py-3">
           {(
             [
               ["Demografia", props.weightDemografia, props.setWeightDemografia],
@@ -118,9 +145,9 @@ export default function FilterPanel(props: FilterPanelProps) {
             ] as const
           ).map(([label, value, setter]) => (
             <div key={label}>
-              <div className="mb-1 flex justify-between text-xs font-semibold text-slate-600">
+              <div className="mb-1 flex justify-between text-xs font-semibold text-[#6a6a72]">
                 <span>{label}</span>
-                <span>{value}%</span>
+                <span className="tabular-nums text-[#0a0a0b]">{value}%</span>
               </div>
               <input
                 type="range"
@@ -128,21 +155,21 @@ export default function FilterPanel(props: FilterPanelProps) {
                 max={100}
                 value={value}
                 onChange={(e) => setter(Number(e.target.value))}
-                className="w-full accent-blue-600"
+                className="w-full accent-[#0a0a0b]"
               />
             </div>
           ))}
         </div>
       </details>
 
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={props.handleTop5Click}
-          className={`rounded-lg px-2.5 py-2 text-sm font-semibold ${
+          className={`min-h-[44px] rounded-xl px-3 py-2.5 text-sm font-bold transition active:scale-[0.98] ${
             props.viewMode === "top"
-              ? "bg-slate-900 text-white"
-              : "bg-blue-600 text-white hover:bg-blue-500"
+              ? "bg-[#0a0a0b] text-white shadow-md"
+              : "border border-[#e6e6ea] bg-white text-[#0a0a0b] hover:border-[#0a0a0b]"
           }`}
         >
           Top 5
@@ -150,24 +177,73 @@ export default function FilterPanel(props: FilterPanelProps) {
         <button
           type="button"
           onClick={props.handleHeatmapClick}
-          className={`rounded-lg px-2.5 py-2 text-sm font-semibold ${
+          className={`min-h-[44px] rounded-xl px-3 py-2.5 text-sm font-bold transition active:scale-[0.98] ${
             props.viewMode === "heatmap"
-              ? "bg-slate-900 text-white"
-              : "bg-slate-200 text-slate-800 hover:bg-slate-300"
+              ? "bg-[#0a0a0b] text-white shadow-md"
+              : "border border-[#e6e6ea] bg-white text-[#0a0a0b] hover:border-[#0a0a0b]"
           }`}
         >
           Raio-X
         </button>
+      </div>
+
+      {/* Comparação A/B — digitação + botão executa */}
+      <div className="space-y-2.5 rounded-2xl border border-[#e6e6ea] bg-white p-3 shadow-[0_8px_24px_rgba(10,10,11,0.04)]">
+        <p className="text-xs font-bold text-[#0a0a0b]">Comparar regiões</p>
+        <p className="text-[11px] leading-snug text-[#6a6a72]">
+          Digite dois bairros. A comparação usa a região completa (não só o
+          ponto no mapa).
+        </p>
+
+        <div className="space-y-1">
+          <label className="flex items-center gap-1.5 text-[11px] font-bold text-[#0a0a0b]">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0a0a0b] text-[10px] text-white">
+              A
+            </span>
+            Região A
+          </label>
+          <AddressSuggest
+            inputId="negocio-compare-a"
+            value={localA}
+            onChange={setLocalA}
+            onPick={(s) =>
+              setLocalA(s.label || s.neighborhoodName)
+            }
+            placeholder="Ex.: Pituba, Portão…"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="flex items-center gap-1.5 text-[11px] font-bold text-[#0a0a0b]">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[#0a0a0b] bg-white text-[10px] text-[#0a0a0b]">
+              B
+            </span>
+            Região B
+          </label>
+          <AddressSuggest
+            inputId="negocio-compare-b"
+            value={localB}
+            onChange={setLocalB}
+            onPick={(s) =>
+              setLocalB(s.label || s.neighborhoodName)
+            }
+            placeholder="Ex.: Barra, Vilas do Atlântico…"
+          />
+        </div>
+
+        {props.compareError && (
+          <p className="text-xs font-semibold text-rose-600">
+            {props.compareError}
+          </p>
+        )}
+
         <button
           type="button"
-          onClick={props.handleCompareClick}
-          className={`col-span-2 rounded-lg border px-2.5 py-2 text-sm font-semibold ${
-            props.viewMode === "compare"
-              ? "border-amber-500 bg-amber-500 text-white"
-              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-          }`}
+          disabled={props.compareRunning || !localA.trim() || !localB.trim()}
+          onClick={() => void props.onRunCompare(localA, localB)}
+          className="min-h-[48px] w-full rounded-xl bg-[#0a0a0b] px-3 py-2.5 text-sm font-bold text-white transition hover:bg-[#1c1c1f] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Comparar locais (A/B)
+          {props.compareRunning ? "Comparando…" : "Comparar locais (A/B)"}
         </button>
       </div>
     </div>

@@ -6,6 +6,10 @@ import { marketplacePriceFull } from "../../data/marketplaceListings";
 import { neighborhoodPhoto } from "../../data/neighborhoodPhotos";
 import { NEIGHBORHOODS } from "../../data/neighborhoods";
 import { getRegionByIdSync } from "../../services/regionsApi";
+import {
+  displayOppScore,
+  useMarketplaceScores,
+} from "../../hooks/useMarketplaceScores";
 import { NearbyCategoryIcon } from "../map/NearbyCategoryIcon";
 import {
   NEARBY_CATEGORY_META,
@@ -47,6 +51,9 @@ export default function PropertyDetailOverlay({
   const [photoIdx, setPhotoIdx] = useState(0);
   const [tab, setTab] = useState<(typeof GALLERY_TABS)[number]>("Fotos");
   const [ask, setAsk] = useState("");
+  const { byId: scoreById } = useMarketplaceScores();
+  const scoreView = scoreById[listing.id];
+  const opp = displayOppScore(listing.id, listing.score, scoreById);
 
   const neighborhood =
     NEIGHBORHOODS.find((n) => n.id === listing.regionId)?.name ||
@@ -181,13 +188,23 @@ export default function PropertyDetailOverlay({
                   <>
                     {" "}
                     · Opp{" "}
-                    <span className="font-bold text-[#006aff]">
-                      {listing.score}
-                    </span>{" "}
-                    · Valorização +{listing.valorizacao12m.toFixed(1)}%
+                    <span className="font-bold text-[#006aff]">{opp}</span>
+                    {scoreView?.valorizacaoPct != null ? (
+                      <>
+                        {" "}
+                        · Valorização{" "}
+                        {scoreView.valorizacaoPct >= 0 ? "+" : ""}
+                        {scoreView.valorizacaoPct.toFixed(1)}%
+                      </>
+                    ) : null}
                   </>
                 )}
               </p>
+              {scoreView?.explain && (
+                <p className="mt-1 text-[11px] font-semibold text-[#6a6a72]">
+                  {scoreView.explain}
+                </p>
+              )}
               {region && (
                 <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#6a6a72]">
                   {region.summary}

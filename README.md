@@ -1,53 +1,66 @@
 # ConverGeo
 
-**Inteligência imobiliária e geoespacial para Salvador (BA)**
+**Inteligência imobiliária e geoespacial para Salvador e Lauro de Freitas (BA)**
 
-Frontend web (Next.js) do ConverGeo: mapa interativo, opportunity/match scores, marketplace de imóveis, tempo de deslocamento e locais próximos via OpenStreetMap.
+[![Version](https://img.shields.io/badge/version-1.2.0-0a0a0b)](./VERSION.md)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
+[![MapLibre](https://img.shields.io/badge/MapLibre-Deck.gl-006aff)](https://maplibre.org/)
+[![License](https://img.shields.io/badge/license-private-lightgrey)](#)
 
-Repositório: [github.com/peuavelar/converGeo](https://github.com/peuavelar/converGeo)
+Frontend web do [ConverGeo](https://github.com/peuavelar/converGeo): mapa interativo, opportunity/match scores, marketplace, tempo de deslocamento e locais próximos via OpenStreetMap.
 
-## Funcionalidades
+---
 
-- Mapa MapLibre + Deck.gl (pins de preço estilo marketplace)
-- Ferramentas: **Para você**, **Tempo**, **Regiões**, **Comparar**
-- Card no clique do mapa com imóveis à venda + dados do bairro
-- Locais próximos reais (restaurantes, hospitais, delegacias, escolas) via **Overpass / OpenStreetMap**
-- Sino Analytics (assistente de regiões)
-- Layout responsivo + PWA (mobile e desktop)
+## Modos
+
+| Modo | O que faz |
+|------|-----------|
+| **Comprar** | Explorar imóveis, orçamento, regiões, rotas e marketplace |
+| **Abrir meu Negócio** | Heatmap H3, Top 5, análise pontual e comparação A/B por região |
+
+Ao trocar de modo, o mapa mostra um estado de carregamento com transição suave (evita parecer bug).
+
+## Destaques (v1.2.0)
+
+- UX mobile do mapa (bottom sheet, safe-area, touch targets)
+- Header centralizado + transição visual entre **Comprar** / **Negócio**
+- Comparar locais A/B por digitação (Salvador + Lauro de Freitas)
+- Código enxuto: hooks de mapa/nearby/negócio + builders de camadas
+- Benchmarks externos opcionais (score calibrado atrás de flag)
+
+Ver [CHANGELOG.md](./CHANGELOG.md) e [VERSION.md](./VERSION.md).
 
 ## Stack
 
 | Camada | Tecnologia |
 |--------|------------|
-| App | Next.js 16, React 19, TypeScript |
+| App | Next.js 16 · React 19 · TypeScript |
 | UI | Tailwind CSS 4 |
-| Mapa | MapLibre GL, Deck.gl, react-map-gl |
-| Dados locais | Mocks Salvador + H3 (negócio) |
-| POIs públicos | OpenStreetMap Overpass API |
-| Geocode | Nominatim OSM |
+| Mapa | MapLibre GL · Deck.gl · react-map-gl |
+| Dados | Mocks regionais · H3 (negócio) · OSM Overpass |
+| Geo | Nominatim · BFF `/api/geo/*` |
 
 ## Estrutura
 
 ```
-convergeo-front/
+converGeo/
 ├── app/
-│   ├── api/geo/             # BFF OSM (nearby, geocode, reverse) + health
-│   ├── components/          # UI (mapa, marketplace, opportunity, zillow)
-│   ├── data/                # Mocks (regiões, listings, bairros)
-│   ├── hooks/
-│   ├── services/            # Cliente UI → BFF / mocks
-│   ├── page.tsx
-│   └── globals.css
+│   ├── api/                 # BFF geo, cron benchmarks, marketplace scores
+│   ├── components/          # mapa, marketplace, opportunity, views, zillow
+│   ├── hooks/               # nearby, negócio, scores
+│   ├── map/                 # builders de camadas Deck.gl
+│   ├── data/                # bairros, listings, filtros
+│   ├── services/            # cliente UI → BFF
+│   └── page.tsx             # shell do app
 ├── lib/
-│   ├── config/              # DATA_PROVIDER, env
-│   ├── geo/                 # Contratos JSON (Python-ready)
-│   ├── osm/                 # Overpass + Nominatim
-│   ├── providers/           # osm | backend | hybrid
-│   └── cache/
-├── docs/DATA_ARCHITECTURE.md
-├── .env.example
-├── public/
-└── package.json
+│   ├── benchmarks/          # coleta + score calibrado (S1)
+│   ├── negocio/             # compare A/B + fetch hex
+│   ├── osm/ · providers/ · geo/
+├── data/benchmarks/         # snapshots JSON (opcional)
+├── docs/                    # arquitetura + benchmarks
+├── scripts/                 # seed / compare / testes
+└── package.json             # v1.2.0
 ```
 
 ## Como rodar
@@ -56,53 +69,55 @@ convergeo-front/
 git clone https://github.com/peuavelar/converGeo.git
 cd converGeo
 npm install
+cp .env.example .env.local
 npm run dev
 ```
 
 Abra [http://localhost:3000](http://localhost:3000).
 
-### Variáveis de ambiente
+### Variáveis
 
-Crie `.env.local` (não versionado):
+Veja [`.env.example`](./.env.example). Sem API Python, o modo imóvel usa mocks locais.
+
+Flags úteis:
 
 ```env
-NEXT_PUBLIC_API_URL=https://convergeo.onrender.com
+ENABLE_EXTERNAL_BENCHMARK=false
+NEXT_PUBLIC_ENABLE_EXTERNAL_BENCHMARK=false
 ```
 
-Sem API, o modo imóvel usa mocks locais de Salvador.
+## Scripts
 
-## APIs públicas (verificar dados)
+```bash
+npm run dev               # desenvolvimento
+npm run build             # produção
+npm run lint              # ESLint
+npm run test:benchmarks   # regras de calibração
+npm run seed:benchmarks   # gera snapshots locais
+```
 
-| Uso | API | Docs / teste |
-|-----|-----|----------------|
-| POIs no mapa | **Overpass** (via `/api/geo/nearby`) | https://overpass-api.de/api/interpreter · [Overpass Turbo](https://overpass-turbo.eu/) |
-| Busca de endereço | **Nominatim** (via `/api/geo/geocode`) | https://nominatim.openstreetmap.org/ |
-| Projeto OSM | GitHub | https://github.com/openstreetmap |
-| Política Overpass | OSMF | https://operations.osmfoundation.org/policies/overpass/ |
+## Dados públicos
 
-Arquitetura BFF + motor Python: [docs/DATA_ARCHITECTURE.md](./docs/DATA_ARCHITECTURE.md)
-
-Healthcheck local:
+| Uso | Via app | Origem |
+|-----|---------|--------|
+| POIs no mapa | `/api/geo/nearby` | [Overpass](https://overpass-api.de/api/interpreter) |
+| Geocode | `/api/geo/geocode` | [Nominatim](https://nominatim.openstreetmap.org/) |
+| Arquitetura BFF | — | [docs/DATA_ARCHITECTURE.md](./docs/DATA_ARCHITECTURE.md) |
+| Benchmarks | flag | [docs/BENCHMARKS.md](./docs/BENCHMARKS.md) |
 
 ```bash
 curl http://localhost:3000/api/health
 ```
 
-No app, ao clicar no mapa, o selo indica **Dados: OpenStreetMap** ou **Estimativa** (fallback).
+## Documentação
 
-## Scripts
+| Doc | Conteúdo |
+|-----|----------|
+| [VERSION.md](./VERSION.md) | release atual |
+| [CHANGELOG.md](./CHANGELOG.md) | histórico de versões |
+| [docs/DATA_ARCHITECTURE.md](./docs/DATA_ARCHITECTURE.md) | BFF + motor Python |
+| [docs/BENCHMARKS.md](./docs/BENCHMARKS.md) | score calibrado (A+S1) |
 
-```bash
-npm run dev      # desenvolvimento
-npm run build    # build de produção
-npm run start    # servir build
-npm run lint     # ESLint
-```
+## Créditos
 
-## Versão
-
-Ver [VERSION.md](./VERSION.md) — atual: **1.1.0** (+ melhorias de UX mapa/marketplace nesta branch).
-
-## Licença / crédito
-
-MVP alinhado ao ecossistema ConverGeo (inteligência geoespacial Salvador). Dados de mapa © contribuidores [OpenStreetMap](https://www.openstreetmap.org/copyright).
+MVP ConverGeo — Salvador / RMS. Dados de mapa © contribuidores [OpenStreetMap](https://www.openstreetmap.org/copyright).

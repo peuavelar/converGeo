@@ -15,9 +15,11 @@ export type Neighborhood = {
   aluguel2q: number; // aluguel típico 2 quartos
   metrics: NeighborhoodMetrics;
   tags: string[];
+  /** Município — Salvador ou Lauro de Freitas (RMS). */
+  city?: "Salvador" | "Lauro de Freitas";
 };
 
-/** Camada mock local (Salvador) — substituível por API depois. */
+/** Camada mock local — Salvador + Lauro de Freitas (RMS). */
 export const NEIGHBORHOODS: Neighborhood[] = [
   {
     id: "pituba",
@@ -168,6 +170,85 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     aluguel2q: 3100,
     metrics: { consumo: 7.5, transporte: 8.8, educacao: 8.0, seguranca: 8.1, rouboFurto: 2.6 },
     tags: ["condomínio", "segurança"],
+    city: "Salvador",
+  },
+  // —— Lauro de Freitas (RMS) ——
+  {
+    id: "lauro-centro",
+    name: "Centro (Lauro)",
+    lat: -12.8944,
+    lng: -38.3272,
+    precoM2: 5800,
+    aluguel2q: 1800,
+    metrics: { consumo: 7.2, transporte: 7.0, educacao: 6.8, seguranca: 6.2, rouboFurto: 4.6 },
+    tags: ["comércio", "RMS"],
+    city: "Lauro de Freitas",
+  },
+  {
+    id: "vilas-do-atlantico",
+    name: "Vilas do Atlântico",
+    lat: -12.8785,
+    lng: -38.292,
+    precoM2: 8500,
+    aluguel2q: 2900,
+    metrics: { consumo: 8.0, transporte: 6.4, educacao: 7.8, seguranca: 7.6, rouboFurto: 3.1 },
+    tags: ["alto padrão", "RMS", "praia"],
+    city: "Lauro de Freitas",
+  },
+  {
+    id: "buraquinho",
+    name: "Buraquinho",
+    lat: -12.9012,
+    lng: -38.3015,
+    precoM2: 6200,
+    aluguel2q: 2000,
+    metrics: { consumo: 6.9, transporte: 6.8, educacao: 6.5, seguranca: 6.5, rouboFurto: 4.2 },
+    tags: ["residencial", "RMS"],
+    city: "Lauro de Freitas",
+  },
+  {
+    id: "portao",
+    name: "Portão",
+    lat: -12.886,
+    lng: -38.318,
+    precoM2: 5600,
+    aluguel2q: 1700,
+    metrics: { consumo: 7.4, transporte: 7.5, educacao: 6.6, seguranca: 6.0, rouboFurto: 4.8 },
+    tags: ["comércio", "fluxo", "RMS"],
+    city: "Lauro de Freitas",
+  },
+  {
+    id: "ipitanga",
+    name: "Ipitanga",
+    lat: -12.912,
+    lng: -38.335,
+    precoM2: 5400,
+    aluguel2q: 1650,
+    metrics: { consumo: 6.8, transporte: 7.2, educacao: 6.3, seguranca: 5.9, rouboFurto: 5.0 },
+    tags: ["acesso", "RMS"],
+    city: "Lauro de Freitas",
+  },
+  {
+    id: "itinga",
+    name: "Itinga",
+    lat: -12.898,
+    lng: -38.348,
+    precoM2: 5000,
+    aluguel2q: 1500,
+    metrics: { consumo: 6.5, transporte: 7.0, educacao: 6.1, seguranca: 5.8, rouboFurto: 5.1 },
+    tags: ["popular", "RMS"],
+    city: "Lauro de Freitas",
+  },
+  {
+    id: "caminhos-do-mar",
+    name: "Caminhos do Mar",
+    lat: -12.869,
+    lng: -38.278,
+    precoM2: 7200,
+    aluguel2q: 2400,
+    metrics: { consumo: 7.1, transporte: 6.2, educacao: 7.2, seguranca: 7.4, rouboFurto: 3.3 },
+    tags: ["condomínio", "RMS"],
+    city: "Lauro de Freitas",
   },
 ];
 
@@ -178,3 +259,7 @@ export const METRIC_LABELS: Record<keyof NeighborhoodMetrics, string> = {
   seguranca: "Segurança",
   rouboFurto: "Roubo e furto",
 };
+
+export function neighborhoodCity(n: Neighborhood): "Salvador" | "Lauro de Freitas" {
+  return n.city ?? "Salvador";
+}

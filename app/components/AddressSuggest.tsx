@@ -12,6 +12,7 @@ type Props = {
   onPick: (suggestion: AddressSuggestion) => void;
   inputId?: string;
   isSearching?: boolean;
+  placeholder?: string;
 };
 
 export default function AddressSuggest({
@@ -20,6 +21,7 @@ export default function AddressSuggest({
   onPick,
   inputId,
   isSearching = false,
+  placeholder = "Digite bairro ou rua",
 }: Props) {
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -60,7 +62,7 @@ export default function AddressSuggest({
         aria-expanded={showList}
         aria-controls={listId}
         aria-autocomplete="list"
-        placeholder="Digite bairro ou rua"
+        placeholder={placeholder}
         value={value}
         disabled={isSearching}
         onChange={(e) => {

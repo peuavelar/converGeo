@@ -137,9 +137,10 @@ export default function RegionHexSheet({
   const metrics = neighborhood?.metrics;
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-20 flex max-h-[min(68dvh,520px)] w-full flex-col overflow-hidden rounded-t-2xl border border-[#d1d1d5] border-b-0 bg-white shadow-2xl animate-fade-in sm:inset-x-auto sm:bottom-4 sm:left-4 sm:max-h-[min(74vh,520px)] sm:w-[min(100%-2rem,380px)] sm:rounded-xl sm:border-b">
+    <div className="absolute inset-x-0 bottom-0 z-20 flex max-h-[min(58dvh,480px)] w-full flex-col overflow-hidden rounded-t-2xl border border-[#d1d1d5] border-b-0 bg-white shadow-2xl animate-fade-in sm:inset-x-auto sm:bottom-4 sm:left-4 sm:max-h-[min(74vh,520px)] sm:w-[min(100%-2rem,380px)] sm:rounded-xl sm:border-b">
+      <div className="mx-auto mt-1.5 h-1 w-10 shrink-0 rounded-full bg-[#d1d1d5] sm:hidden" aria-hidden />
       <div className="flex shrink-0 items-start justify-between gap-2 border-b border-[#e8e8ed] px-3 py-2.5">
-        <div>
+        <div className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-wide text-[#006aff]">
             Oportunidades · bairro
           </p>
@@ -154,14 +155,14 @@ export default function RegionHexSheet({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-full px-2 py-1 text-sm font-bold text-[#6a6a72] hover:bg-[#f5f5f7]"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-bold text-[#6a6a72] hover:bg-[#f5f5f7] active:bg-[#e8e8ed]"
           aria-label="Fechar"
         >
           ✕
         </button>
       </div>
 
-      <div className="space-y-2.5 overflow-y-auto p-3 custom-scrollbar">
+      <div className="custom-scrollbar space-y-2.5 overflow-y-auto overscroll-contain p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <DualScore
           opportunityScore={region.score}
           matchScore={Math.round(
@@ -338,7 +339,7 @@ export default function RegionHexSheet({
         <button
           type="button"
           onClick={() => onOpenFull?.(region.id)}
-          className="w-full rounded-full bg-[#006aff] py-2.5 text-sm font-bold text-white hover:bg-[#0058d6]"
+          className="min-h-[48px] w-full rounded-full bg-[#006aff] py-3 text-sm font-bold text-white hover:bg-[#0058d6] active:bg-[#004bb8]"
         >
           Ver análise completa
         </button>

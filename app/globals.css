@@ -1,17 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  /* Zillow-inspired real-estate system (not a copy of trademarks) */
+  /* ConverGeo — branco dominante + acentos pretos modernos */
   --zg-blue: #006aff;
   --zg-blue-hover: #0058d6;
   --zg-blue-soft: #e8f1ff;
-  --zg-navy: #1a1a2e;
-  --zg-ink: #2a2a33;
+  --zg-ink: #0a0a0b;
+  --zg-ink-soft: #1c1c1f;
+  --zg-charcoal: #2a2a2e;
   --zg-muted: #6a6a72;
-  --zg-line: #e0e0e5;
+  --zg-line: #e6e6ea;
+  --zg-line-strong: #c8c8ce;
   --zg-surface: #ffffff;
-  --zg-canvas: #f5f6f8;
+  --zg-canvas: #f7f7f8;
   --zg-success: #1a7f37;
+  --zg-navy: #0a0a0b;
   --background: var(--zg-canvas);
   --foreground: var(--zg-ink);
 }
@@ -87,6 +90,33 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes mode-veil-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes mode-veil-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-mode-veil-in {
+  animation: mode-veil-in 0.22s ease-out both;
+}
+
+.animate-mode-veil-out {
+  animation: mode-veil-out 0.28s ease-in both;
+  pointer-events: none;
 }
 
 @keyframes filtro-backdrop {

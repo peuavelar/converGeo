@@ -256,7 +256,7 @@ export default function ViewFrequentPlaces({
         </p>
       </div>
 
-      <div className="rounded-lg border border-[#d1d1d5] bg-white p-2">
+      <div className="rounded-lg border border-[#d1d1d5] bg-[#e8f1ff]/40 p-2">
         <label
           htmlFor="frequent-place"
           className="block text-[10px] font-bold uppercase tracking-wide text-[#6a6a72]"
@@ -275,16 +275,20 @@ export default function ViewFrequentPlaces({
               }
             }}
             placeholder="Ex.: Shopping da Bahia…"
-            className="min-w-0 flex-1 rounded-md border border-[#c3c3c8] px-2.5 py-1.5 text-sm outline-none focus:border-[#006aff] focus:ring-2 focus:ring-[#006aff]/20"
+            autoComplete="off"
+            className="min-w-0 flex-1 rounded-md border border-[#c3c3c8] bg-white px-2.5 py-1.5 text-sm outline-none focus:border-[#006aff] focus:ring-2 focus:ring-[#006aff]/20"
           />
           <button
             type="button"
             onClick={() => void addPlace()}
             className="shrink-0 rounded-full bg-[#006aff] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#0058d6]"
           >
-            Add
+            Adicionar
           </button>
         </div>
+        <p className="mt-1 text-[10px] text-[#6a6a72]">
+          Digite um local ou toque em um atalho abaixo.
+        </p>
         <div className="mt-1.5 flex flex-wrap gap-1">
           {SUGGESTIONS.map((s) => (
             <button

@@ -1,18 +1,17 @@
-# ConverGeo Web — v1.1.0+
+# ConverGeo Web — v1.2.0
 
 ## Release
-- **Versão:** 1.1.0 (base) + UX mapa/marketplace
-- **Dados:** mocks Salvador + POIs reais via OpenStreetMap (Overpass)
+- **Versão:** 1.2.0
+- **Dados:** mocks Salvador/Lauro + POIs OSM + benchmarks opcionais
 - **Plataformas:** Web responsiva + PWA
 
-## O que mudou (sessão recente)
-- Busca na barra de filtros + placeholder animado “Busque um endereço”
-- Clique no mapa: card “À venda por aqui” (3 imóveis) + dados do bairro
-- Marketplace filtrado por bairro (“Ver todos na região”)
-- POIs com ícones: restaurantes, hospitais, delegacias, escolas (Overpass)
-- Tooltip do POI à direita (sem botão Legenda)
-- Sino Analytics (renome) + UI de Regiões/Tempo compactas
-- Mapa: pan/zoom mobile e `touch-action: none`
+## O que mudou (1.2.0)
+- Transição de loading ao trocar Comprar ↔ Negócio
+- Refatoração: `page.tsx` enxuto com hooks (`useNearbyPlaces`, `useNegocioMap`) e builders de camadas do mapa
+- Helpers compartilhados: score dinâmico, listas de comparação A/B, export CSV, fetch de hex scores
+- Negócio: comparação A/B por digitação (regiões Salvador + Lauro de Freitas)
+- Benchmarks externos (S1) atrás de flag — score calibrado derivado
+- Docs GitHub: README + CHANGELOG
 
 ## Produção
 - Source maps do browser desabilitados
@@ -22,5 +21,4 @@
 
 ## APIs públicas
 - Overpass: https://overpass-api.de/api/interpreter
-- Overpass Turbo: https://overpass-turbo.eu/
 - Nominatim: https://nominatim.openstreetmap.org/

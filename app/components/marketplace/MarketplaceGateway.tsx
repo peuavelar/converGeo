@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  filterMarketplaceListings,
   MARKETPLACE_LISTINGS,
   marketplacePriceFull,
   type MarketplaceListing,
@@ -10,6 +9,10 @@ import {
 import { NEIGHBORHOODS } from "../../data/neighborhoods";
 import { getRegionByIdSync } from "../../services/regionsApi";
 import { FiltroPill, type AdvancedFilters } from "../zillow/FiltroSheet";
+import {
+  displayOppScore,
+  useMarketplaceScores,
+} from "../../hooks/useMarketplaceScores";
 
 type MapTriggerProps = {
   hidden?: boolean;
@@ -27,7 +30,7 @@ export function MarketplaceMapTrigger({
     <button
       type="button"
       onClick={onRequestOpen}
-      className="absolute left-2 top-2 z-30 flex items-center gap-1.5 rounded-full bg-[#0a1220] px-2.5 py-1.5 text-[11px] font-bold text-white shadow-lg ring-1 ring-[#006aff]/40 transition hover:bg-[#122038] animate-fade-in sm:left-4 sm:top-4 sm:gap-2 sm:px-3.5 sm:py-2 sm:text-sm"
+      className="absolute left-2 top-2 z-30 flex min-h-[44px] items-center gap-1.5 rounded-full bg-[#0a1220] px-3 py-2 text-[11px] font-bold text-white shadow-lg ring-1 ring-[#006aff]/40 transition hover:bg-[#122038] active:scale-[0.98] animate-fade-in sm:left-4 sm:top-4 sm:gap-2 sm:px-3.5 sm:text-sm"
     >
       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#006aff] text-[10px] sm:h-6 sm:w-6 sm:text-xs">
         ◇
@@ -108,6 +111,7 @@ export default function MarketplaceListPanel({
   const [query, setQuery] = useState("");
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const focusedRef = useRef<HTMLDivElement | null>(null);
+  const { enabled: benchEnabled, byId: scoreById } = useMarketplaceScores();
 
   useEffect(() => {
     if (regionFilterLabel) {
@@ -117,7 +121,22 @@ export default function MarketplaceListPanel({
   }, [regionFilterId, regionFilterLabel]);
 
   const { listings, filterRelaxed } = useMemo(() => {
-    const pool = filterMarketplaceListings(filter);
+    // Custo-benefício: com flag, usa percentil real; sem flag, heurística antiga por score.
+    let pool = MARKETPLACE_LISTINGS;
+    if (filter === "alto") {
+      pool = MARKETPLACE_LISTINGS.filter((l) => {
+        const s = displayOppScore(l.id, l.score, scoreById);
+        return s >= 80;
+      });
+    } else if (filter === "medio") {
+      pool = MARKETPLACE_LISTINGS.filter((l) => {
+        if (benchEnabled && scoreById[l.id]?.benchmarkAvailable) {
+          const pct = scoreById[l.id].pricePositionPercentile;
+          return pct != null && pct <= 45;
+        }
+        return l.score >= 65 && l.score < 80;
+      });
+    }
     const q = query.trim().toLowerCase();
 
     let bySearch = pool;
@@ -186,6 +205,8 @@ export default function MarketplaceListPanel({
     quartos,
     advancedFilters,
     regionFilterId,
+    scoreById,
+    benchEnabled,
   ]);
 
   const focusedListing =
@@ -347,13 +368,23 @@ export default function MarketplaceListPanel({
                 Selecionado
               </span>
               <span className="absolute right-2 top-2 rounded bg-[#006aff] px-2 py-0.5 text-[11px] font-bold text-white">
-                Opp {focusedListing.score}
+                Opp{" "}
+                {displayOppScore(
+                  focusedListing.id,
+                  focusedListing.score,
+                  scoreById,
+                )}
               </span>
             </div>
             <div className="p-3">
               <p className="text-xl font-bold tabular-nums text-[#2a2a33]">
                 {marketplacePriceFull(focusedListing.price)}
               </p>
+              {scoreById[focusedListing.id]?.explain && (
+                <p className="mt-1 text-[10px] font-semibold leading-snug text-[#6a6a72]">
+                  {scoreById[focusedListing.id].explain}
+                </p>
+              )}
               <p className="mt-1 text-xs text-[#6a6a72]">
                 {focusedListing.beds} quartos · {focusedListing.baths} ba ·{" "}
                 {focusedListing.area} m² · Apartamento
@@ -409,7 +440,7 @@ export default function MarketplaceListPanel({
                       className="h-full w-full object-cover"
                     />
                     <span className="absolute left-2 top-2 rounded bg-white/95 px-1.5 py-0.5 text-[10px] font-bold text-[#2a2a33]">
-                      Opp {item.score}
+                      Opp {displayOppScore(item.id, item.score, scoreById)}
                     </span>
                     {item.price > budget && (
                       <span className="absolute right-2 top-2 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white">
@@ -421,6 +452,11 @@ export default function MarketplaceListPanel({
                     <p className="text-sm font-bold tabular-nums text-[#2a2a33]">
                       {marketplacePriceFull(item.price)}
                     </p>
+                    {scoreById[item.id]?.explain && (
+                      <p className="mt-0.5 line-clamp-2 text-[9px] font-semibold leading-snug text-[#6a6a72]">
+                        {scoreById[item.id].explain}
+                      </p>
+                    )}
                     <p className="mt-0.5 text-[11px] leading-snug text-[#6a6a72]">
                       {item.beds} quartos · {item.baths} ba · {item.area} m²
                     </p>

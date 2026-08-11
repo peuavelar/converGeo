@@ -1,4 +1,4 @@
-import { NEIGHBORHOODS } from "./neighborhoods";
+import { NEIGHBORHOODS, neighborhoodCity } from "./neighborhoods";
 
 export type AddressSuggestion = {
   id: string;
@@ -51,6 +51,18 @@ const STREETS_BY_NEIGHBORHOOD: Record<string, string[]> = {
   ],
   liberdade: ["Av. Liberdade", "Rua Lima e Silva", "Largo da Liberdade"],
   paralela: ["Av. Luís Viana Filho", "Alameda Euvaldo Luz"],
+  // Lauro de Freitas
+  "lauro-centro": ["Av. Santos Dumont", "Rua Direta do Centro", "Praça da Bíblia"],
+  "vilas-do-atlantico": [
+    "Av. Praia de Ipitanga",
+    "Alameda Praia de Guarajuba",
+    "Rua das Algarobas",
+  ],
+  buraquinho: ["Estrada do Coco", "Rua do Buraquinho"],
+  portao: ["Av. Santos Dumont", "Rua do Portão", "Via Paradise"],
+  ipitanga: ["Av. Praia de Ipitanga", "Rua da Orla"],
+  itinga: ["Av. Parallel", "Rua da Itinga"],
+  "caminhos-do-mar": ["Av. Praia de Guarajuba", "Alameda dos Flamboyants"],
 };
 
 export function buildAddressSuggestions(
@@ -63,10 +75,12 @@ export function buildAddressSuggestions(
   const results: AddressSuggestion[] = [];
 
   for (const n of NEIGHBORHOODS) {
-    if (n.name.toLowerCase().includes(q)) {
+    const city = neighborhoodCity(n);
+    const citySuffix = city === "Salvador" ? "" : ` · ${city}`;
+    if (n.name.toLowerCase().includes(q) || city.toLowerCase().includes(q)) {
       results.push({
         id: `bairro-${n.id}`,
-        label: n.name,
+        label: `${n.name}${citySuffix}`,
         kind: "bairro",
         neighborhoodId: n.id,
         neighborhoodName: n.name,
@@ -75,11 +89,11 @@ export function buildAddressSuggestions(
 
     const streets = STREETS_BY_NEIGHBORHOOD[n.id] ?? [];
     for (const street of streets) {
-      const haystack = `${street} ${n.name}`.toLowerCase();
+      const haystack = `${street} ${n.name} ${city}`.toLowerCase();
       if (haystack.includes(q) || street.toLowerCase().includes(q)) {
         results.push({
           id: `rua-${n.id}-${street}`,
-          label: `${street} — ${n.name}`,
+          label: `${street} — ${n.name}${citySuffix}`,
           kind: "rua",
           neighborhoodId: n.id,
           neighborhoodName: n.name,
