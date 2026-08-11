@@ -120,11 +120,11 @@ const ITEMS: {
   },
 ];
 
-/** Rail vertical estilo Zillow — ícone + rótulo. */
+/** Rail vertical estilo Zillow — ícone + rótulo (desktop). */
 export default function ZillowSideRail({ active, onChange }: Props) {
   return (
     <nav
-      className="flex w-[76px] shrink-0 flex-col items-stretch border-r border-[#d1d1d5] bg-white py-2 print:hidden"
+      className="hidden w-[76px] shrink-0 flex-col items-stretch border-r border-[#d1d1d5] bg-white py-2 print:hidden lg:flex"
       aria-label="Navegação principal"
     >
       {ITEMS.map((item) => {
@@ -153,6 +153,47 @@ export default function ZillowSideRail({ active, onChange }: Props) {
               }`}
             >
               {item.label}
+            </span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+/** Barra inferior para iPhone / Android. */
+export function ZillowMobileTabBar({ active, onChange }: Props) {
+  return (
+    <nav
+      className="safe-pb z-40 flex shrink-0 border-t border-[#d1d1d5] bg-white px-1 pt-1 lg:hidden print:hidden"
+      aria-label="Navegação principal"
+    >
+      {ITEMS.map((item) => {
+        const isActive = active === item.id;
+        const short =
+          item.id === "atualizacoes"
+            ? "Alertas"
+            : item.id === "inbox"
+              ? "Inbox"
+              : item.label;
+        return (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onChange(item.id)}
+            className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 transition ${
+              isActive ? "text-[#006aff]" : "text-[#6a6a72]"
+            }`}
+          >
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                isActive ? "bg-[#e8f1ff] text-[#006aff]" : "text-[#3a3a42]"
+              }`}
+            >
+              {item.icon(isActive)}
+            </span>
+            <span className="max-w-full truncate text-center text-[10px] font-semibold leading-tight">
+              {short}
             </span>
           </button>
         );

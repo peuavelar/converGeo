@@ -74,7 +74,7 @@ export default function RegionHexSheet({
   const visible = nearbyPlaces.filter((p) => nearbyFilters[p.category]);
 
   return (
-    <div className="absolute bottom-4 left-4 z-20 flex max-h-[min(78vh,560px)] w-[min(100%-2rem,380px)] flex-col overflow-hidden rounded-xl border border-[#d1d1d5] bg-white shadow-2xl animate-fade-in">
+    <div className="absolute inset-x-0 bottom-0 z-20 flex max-h-[min(72dvh,560px)] w-full flex-col overflow-hidden rounded-t-2xl border border-[#d1d1d5] border-b-0 bg-white shadow-2xl animate-fade-in sm:inset-x-auto sm:bottom-4 sm:left-4 sm:max-h-[min(78vh,560px)] sm:w-[min(100%-2rem,380px)] sm:rounded-xl sm:border-b">
       <div className="flex shrink-0 items-start justify-between gap-2 border-b border-[#e8e8ed] px-3.5 py-3">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-wide text-[#6a6a72]">

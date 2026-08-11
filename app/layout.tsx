@@ -49,6 +49,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#006aff" },
@@ -66,7 +68,7 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col overscroll-none">
+      <body className="flex min-h-dvh flex-col overflow-x-hidden overscroll-none">
         {children}
         <RegisterSW />
       </body>

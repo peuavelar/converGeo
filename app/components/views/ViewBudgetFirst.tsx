@@ -16,6 +16,8 @@ type Props = {
   setBudget: (v: number) => void;
   quartos: number;
   setQuartos: (v: number) => void;
+  /** Características vindas do modal Filtros (barra superior). */
+  advancedAmenities?: string[];
   triggerSearch: number;
   onSelectRegion: (id: string) => void;
   onHighlightRegions?: (ids: string[]) => void;
@@ -27,6 +29,7 @@ export default function ViewBudgetFirst({
   setBudget,
   quartos,
   setQuartos,
+  advancedAmenities = [],
   triggerSearch,
   onSelectRegion,
   onHighlightRegions,
@@ -35,13 +38,16 @@ export default function ViewBudgetFirst({
   const [step, setStep] = useState<"form" | "results">("form");
   const [propertyType, setPropertyType] = useState("apartamento");
   const [areaMin, setAreaMin] = useState(60);
-  const [amenities, setAmenities] = useState<BuyerAmenity[]>([
-    "Elevador",
-    "Portaria",
-    "Garagem",
-  ]);
   const [preference, setPreference] = useState(55);
   const [submitted, setSubmitted] = useState<BuyerProfile | null>(null);
+
+  const amenities = useMemo(
+    () =>
+      advancedAmenities.filter((a): a is BuyerAmenity =>
+        (BUYER_AMENITIES as readonly string[]).includes(a),
+      ),
+    [advancedAmenities],
+  );
 
   const draft: BuyerProfile = useMemo(
     () => ({
@@ -73,23 +79,17 @@ export default function ViewBudgetFirst({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [triggerSearch]);
 
-  const toggleAmenity = (a: BuyerAmenity) => {
-    setAmenities((prev) =>
-      prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a],
-    );
-  };
-
   if (step === "results" && analysis) {
     const list = analysis.matches.slice(0, 8);
     return (
-      <div className="animate-fade-in">
-        <div className="sticky top-0 z-10 border-b border-[#d1d1d5] bg-white px-4 py-3">
+      <div className="min-h-full animate-fade-in bg-white">
+        <div className="sticky top-0 z-10 border-b border-[#d1d1d5] bg-white px-3 py-2.5">
           <div className="flex items-center justify-between gap-2">
-            <div>
+            <div className="min-w-0">
               <p className="text-sm font-bold text-[#2a2a33]">
                 {list.length} regiões em Salvador, BA
               </p>
-              <p className="text-xs text-[#6a6a72]">
+              <p className="truncate text-xs text-[#6a6a72]">
                 {formatBRL(analysis.profile.budget)} · {analysis.profileSummary}
               </p>
             </div>
@@ -99,7 +99,7 @@ export default function ViewBudgetFirst({
                 setStep("form");
                 onHighlightRegions?.([]);
               }}
-              className="text-xs font-semibold text-[#006aff] hover:underline"
+              className="shrink-0 text-xs font-semibold text-[#006aff] hover:underline"
             >
               Editar
             </button>
@@ -138,20 +138,19 @@ export default function ViewBudgetFirst({
   }
 
   return (
-    <div className="animate-fade-in p-4">
-      <h2 className="text-2xl font-bold tracking-tight text-[#2a2a33]">
+    <div className="flex min-h-0 flex-1 flex-col animate-fade-in overflow-x-hidden bg-white px-3 pb-3 pt-2">
+      <h2 className="text-[0.95rem] font-bold leading-snug tracking-tight text-[#2a2a33] sm:text-lg">
         Encontre onde seu dinheiro compra melhor
       </h2>
-      <p className="mt-1 text-sm text-[#6a6a72]">
-        Salvador, BA · filtre pelo seu perfil e veja as regiões no mapa
-      </p>
 
-      <div className="mt-5 space-y-4">
+      <div className="mt-3 flex min-h-0 flex-1 flex-col gap-3.5">
         <div>
-          <p className="mb-1 text-xs font-bold uppercase tracking-wide text-[#6a6a72]">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-[#6a6a72]">
             Orçamento
           </p>
-          <p className="text-2xl font-bold text-[#2a2a33]">{formatBRL(budget)}</p>
+          <p className="text-base font-bold tabular-nums text-[#2a2a33]">
+            {formatBRL(budget)}
+          </p>
           <input
             type="range"
             min={200000}
@@ -159,16 +158,16 @@ export default function ViewBudgetFirst({
             step={10000}
             value={budget}
             onChange={(e) => setBudget(Number(e.target.value))}
-            className="mt-2 w-full accent-[#006aff]"
+            className="mt-1.5 w-full accent-[#006aff]"
           />
         </div>
 
-        <label className="block text-xs font-bold uppercase tracking-wide text-[#6a6a72]">
+        <label className="block min-w-0 text-[11px] font-bold uppercase tracking-wide text-[#6a6a72]">
           Tipo
           <select
             value={propertyType}
             onChange={(e) => setPropertyType(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-[#c3c3c8] px-3 py-2.5 text-sm font-semibold text-[#2a2a33] outline-none focus:border-[#006aff]"
+            className="mt-1 w-full max-w-full rounded-lg border border-[#c3c3c8] px-2.5 py-2 text-sm font-semibold text-[#2a2a33] outline-none focus:border-[#006aff]"
           >
             {RESIDENTIAL_PROPERTY_TYPES.map((t) => (
               <option key={t.value} value={t.value}>
@@ -178,17 +177,17 @@ export default function ViewBudgetFirst({
           </select>
         </label>
 
-        <div>
-          <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-[#6a6a72]">
+        <div className="min-w-0">
+          <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-[#6a6a72]">
             Quartos
           </p>
-          <div className="flex gap-2">
+          <div className="grid w-full min-w-0 grid-cols-4 gap-1.5">
             {[1, 2, 3, 4].map((n) => (
               <button
                 key={n}
                 type="button"
                 onClick={() => setQuartos(n)}
-                className={`flex-1 rounded-full border py-2.5 text-sm font-bold ${
+                className={`min-w-0 rounded-full border py-2 text-xs font-bold ${
                   quartos === n
                     ? "border-[#006aff] bg-[#e8f1ff] text-[#006aff]"
                     : "border-[#c3c3c8] text-[#2a2a33]"
@@ -200,7 +199,7 @@ export default function ViewBudgetFirst({
           </div>
         </div>
 
-        <label className="block text-xs font-bold uppercase tracking-wide text-[#6a6a72]">
+        <label className="block min-w-0 text-[11px] font-bold uppercase tracking-wide text-[#6a6a72]">
           Área mínima (m²)
           <input
             type="number"
@@ -208,37 +207,18 @@ export default function ViewBudgetFirst({
             max={300}
             value={areaMin}
             onChange={(e) => setAreaMin(Number(e.target.value) || 60)}
-            className="mt-1 w-full rounded-lg border border-[#c3c3c8] px-3 py-2.5 text-sm font-semibold outline-none focus:border-[#006aff]"
+            className="mt-1 w-full max-w-full rounded-lg border border-[#c3c3c8] px-2.5 py-2 text-sm font-semibold outline-none focus:border-[#006aff]"
           />
         </label>
 
-        <div>
-          <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-[#6a6a72]">
-            Características
+        {amenities.length > 0 && (
+          <p className="rounded-lg border border-[#e8f1ff] bg-[#f5f9ff] px-2.5 py-1.5 text-[10px] leading-snug text-[#3a5a8a]">
+            Características via <strong>Filtros</strong>: {amenities.join(", ")}.
           </p>
-          <div className="flex flex-wrap gap-2">
-            {BUYER_AMENITIES.map((a) => {
-              const on = amenities.includes(a);
-              return (
-                <button
-                  key={a}
-                  type="button"
-                  onClick={() => toggleAmenity(a)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
-                    on
-                      ? "border-[#006aff] bg-[#e8f1ff] text-[#006aff]"
-                      : "border-[#c3c3c8] text-[#2a2a33]"
-                  }`}
-                >
-                  {a}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        )}
 
         <div>
-          <div className="mb-1 flex justify-between text-xs font-bold text-[#6a6a72]">
+          <div className="mb-1 flex justify-between text-[11px] font-bold text-[#6a6a72]">
             <span>Preço</span>
             <span>Valorização</span>
           </div>
@@ -255,7 +235,7 @@ export default function ViewBudgetFirst({
         <button
           type="button"
           onClick={runSearch}
-          className="w-full rounded-full bg-[#006aff] py-3.5 text-sm font-bold text-white hover:bg-[#0058d6]"
+          className="mt-1 w-full rounded-full bg-[#006aff] py-2.5 text-sm font-bold text-white hover:bg-[#0058d6]"
         >
           Encontrar oportunidades
         </button>

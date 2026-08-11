@@ -40,23 +40,24 @@ export const RESIDENTIAL_PROPERTY_TYPES: PropertyTypeOption[] = [
   { value: "casa", label: "Casa", category: "residencial" },
   {
     value: "casa_condominio",
-    label: "Casa de Condomínio",
+    label: "Condominio de Casas",
     category: "residencial",
   },
   { value: "chacara", label: "Chácara", category: "residencial" },
-  { value: "cobertura", label: "Cobertura", category: "residencial" },
-  { value: "flat", label: "Flat", category: "residencial" },
-  { value: "kitnet", label: "Kitnet/Conjugado", category: "residencial" },
-  { value: "lote_terreno", label: "Lote/Terreno", category: "residencial" },
-  { value: "sobrado", label: "Sobrado", category: "residencial" },
+  { value: "kitnet", label: "Kitnet", category: "residencial" },
+  {
+    value: "lote_terreno",
+    label: "Terreno e Lote",
+    category: "residencial",
+  },
   {
     value: "edificio_residencial",
-    label: "Edifício Residencial",
+    label: "Empreendimento",
     category: "residencial",
   },
   {
     value: "fazenda_sitio",
-    label: "Fazenda/Sítios/Chácaras",
+    label: "Fazendas/Sítios",
     category: "residencial",
   },
 ];

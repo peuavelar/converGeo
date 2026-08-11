@@ -30,7 +30,12 @@ import ViewBudgetFirst from "./components/views/ViewBudgetFirst";
 import ViewFrequentPlaces from "./components/views/ViewFrequentPlaces";
 import ZillowTopNav from "./components/zillow/ZillowTopNav";
 import ZillowFilterBar from "./components/zillow/ZillowFilterBar";
+import {
+  ADVANCED_FILTER_OPEN,
+  type AdvancedFilters,
+} from "./components/zillow/FiltroSheet";
 import ZillowSideRail, {
+  ZillowMobileTabBar,
   type SideRailTab,
 } from "./components/zillow/ZillowSideRail";
 import type {
@@ -81,6 +86,8 @@ export default function App() {
   const [matchHighlightIds, setMatchHighlightIds] = useState<string[]>([]);
   const [budget, setBudget] = useState(500000);
   const [filterQuartos, setFilterQuartos] = useState(2);
+  const [advancedFilters, setAdvancedFilters] =
+    useState<AdvancedFilters>(ADVANCED_FILTER_OPEN);
   const [searchTrigger, setSearchTrigger] = useState(0);
   const [propertyType, setPropertyType] =
     useState<PropertyType>("apartamento");
@@ -114,8 +121,28 @@ export default function App() {
   const [marketplaceOpen, setMarketplaceOpen] = useState(false);
   const [sideRailTab, setSideRailTab] = useState<SideRailTab>("procurar");
   const [detailListingId, setDetailListingId] = useState<string | null>(null);
+  /** Mobile: mapa primeiro; desktop: painel aberto. */
+  const [mobilePane, setMobilePane] = useState<"content" | "map">("map");
+  /** Desktop: menu aberto. Mobile (1º acesso): mapa em tela cheia. */
+  const [panelOpen, setPanelOpen] = useState(false);
   const nearbyAbortRef = useRef<AbortController | null>(null);
   const nearbyReqIdRef = useRef(0);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const syncLayout = () => {
+      if (mq.matches) {
+        setPanelOpen(true);
+        setMobilePane("content");
+      } else {
+        setPanelOpen(false);
+        setMobilePane("map");
+      }
+    };
+    syncLayout();
+    mq.addEventListener("change", syncLayout);
+    return () => mq.removeEventListener("change", syncLayout);
+  }, []);
 
   const [hexData, setHexData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -229,6 +256,8 @@ export default function App() {
     setRegionSheetOpen(true);
     setSideRailTab("procurar");
     setMarketplaceOpen(true);
+    setMobilePane("content");
+    setPanelOpen(true);
     // Marca o ponto clicado (livre) e carrega serviços no raio de 2 km
     void loadNearby(lat, lng, nearest.name);
   };
@@ -242,6 +271,8 @@ export default function App() {
     setRegionSheetOpen(true);
     flyTo(region.lat, region.lng, 13.8);
     void loadNearby(region.lat, region.lng, region.name);
+    setPanelOpen(true);
+    setMobilePane("content");
   };
 
   const handlePickAddress = (suggestion: {
@@ -544,6 +575,8 @@ export default function App() {
         setOpenMarketListingId(listing.id);
         setSideRailTab("procurar");
         setMarketplaceOpen(true);
+        setPanelOpen(true);
+        setMobilePane("content");
         setActiveRegionId(listing.regionId);
         const n = NEIGHBORHOODS.find((x) => x.id === listing.regionId);
         setActiveNeighborhood(n ?? null);
@@ -869,7 +902,15 @@ export default function App() {
   ]);
 
   const mapPane = (
-    <div className="relative min-h-0 min-w-0 flex-1 bg-[#e8e8ed]">
+    <div
+      className={`relative min-h-0 min-w-0 bg-[#e8e8ed] order-1 lg:order-2 ${
+        panelOpen && marketplaceOpen && sideRailTab === "procurar"
+          ? "hidden lg:flex lg:flex-1"
+          : panelOpen
+            ? "flex max-lg:h-[38%] max-lg:flex-none lg:flex-1"
+            : "flex flex-1"
+      }`}
+    >
       <DeckGL
         viewState={viewState}
         onViewStateChange={(e: any) => setViewState(e.viewState)}
@@ -882,12 +923,13 @@ export default function App() {
         getCursor={({ isDragging }: any) =>
           isDragging ? "grabbing" : appMode === "imovel" ? "crosshair" : "grab"
         }
+        style={{ width: "100%", height: "100%" }}
       >
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <Map mapStyle={MAP_STYLES[currentStyle].url as any} />
       </DeckGL>
 
-      <div className="absolute bottom-4 right-4 z-10">
+      <div className="absolute bottom-3 right-2 z-10 lg:bottom-4 lg:right-4">
         <MapControls
           currentStyle={currentStyle}
           setCurrentStyle={setCurrentStyle}
@@ -913,6 +955,8 @@ export default function App() {
                   setMarketplaceOpen(false);
                   setSideRailTab("procurar");
                   setImovelTool("rotas");
+                  setPanelOpen(true);
+                  setMobilePane("content");
                 }
               : undefined
           }
@@ -924,8 +968,13 @@ export default function App() {
 
       {appMode === "imovel" && (
         <MarketplaceMapTrigger
-          hidden={marketplaceOpen}
-          onRequestOpen={() => setMarketplaceOpen(true)}
+          hidden={marketplaceOpen && panelOpen}
+          onRequestOpen={() => {
+            setMarketplaceOpen(true);
+            setSideRailTab("procurar");
+            setPanelOpen(true);
+            setMobilePane("content");
+          }}
         />
       )}
 
@@ -935,6 +984,8 @@ export default function App() {
           onClose={clearRegion}
           onOpenFull={(id) => {
             selectRegion(id);
+            setPanelOpen(true);
+            setMobilePane("content");
           }}
           nearbyPlaces={nearbyPlaces}
           nearbyLoading={nearbyLoading}
@@ -948,32 +999,62 @@ export default function App() {
     </div>
   );
 
+  const openSideTab = (tab: SideRailTab) => {
+    setSideRailTab(tab);
+    setPanelOpen(true);
+    setMobilePane("content");
+    if (tab === "procurar") {
+      setMarketplaceOpen(false);
+      setImovelTool("orcamento");
+    } else {
+      setMarketplaceOpen(false);
+    }
+  };
+
+  const closeSidePanel = () => {
+    setPanelOpen(false);
+    setMobilePane("map");
+  };
+
+  const openSidePanel = () => {
+    setPanelOpen(true);
+    setMobilePane("content");
+  };
+
   return (
-    <main className="flex h-screen w-full flex-col overflow-hidden bg-white print:h-auto print:overflow-visible">
+    <main className="flex h-dvh max-h-dvh w-full max-w-[100vw] flex-col overflow-hidden bg-white print:h-auto print:overflow-visible">
       <ZillowTopNav
         appMode={appMode}
         setAppMode={(mode) => {
           setAppMode(mode);
           setPropertyType(defaultPropertyType(mode));
           setSearchError("");
+          setMobilePane("content");
         }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        onSearch={handleAddressSearch}
+        onSearch={(e) => {
+          setMobilePane("content");
+          handleAddressSearch(e);
+        }}
         isSearching={isSearching}
       />
 
       {appMode === "imovel" && (
         <ZillowFilterBar
           tool={imovelTool}
-          setTool={setImovelTool}
-          budget={budget}
-          setBudget={setBudget}
-          quartos={filterQuartos}
-          setQuartos={setFilterQuartos}
+          setTool={(t) => {
+            setImovelTool(t);
+            setPanelOpen(true);
+            setMobilePane("content");
+          }}
+          filters={advancedFilters}
+          setFilters={setAdvancedFilters}
           onFind={() => {
             setImovelTool("orcamento");
             setSearchTrigger((n) => n + 1);
+            setPanelOpen(true);
+            setMobilePane("content");
           }}
         />
       )}
@@ -984,28 +1065,48 @@ export default function App() {
         </p>
       )}
 
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#e8e8ed] lg:flex-row">
         {appMode === "imovel" && (
-          <ZillowSideRail
-            active={sideRailTab}
-            onChange={(tab) => {
-              setSideRailTab(tab);
-              if (tab === "procurar") {
-                setMarketplaceOpen(false);
-                setImovelTool("orcamento");
-              } else {
-                setMarketplaceOpen(false);
-              }
-            }}
-          />
+          <ZillowSideRail active={sideRailTab} onChange={openSideTab} />
         )}
-        <aside
-          className={`flex shrink-0 flex-col border-r border-[#d1d1d5] bg-white print:max-w-none print:border-none ${
+
+        <div
+          className={`relative z-20 order-2 min-h-0 flex-col bg-white shadow-[0_-6px_24px_rgba(0,0,0,0.12)] max-lg:rounded-t-2xl lg:order-1 lg:rounded-none lg:shadow-none ${
+            panelOpen
+              ? marketplaceOpen && sideRailTab === "procurar"
+                ? "flex max-lg:h-full max-lg:flex-1 max-lg:rounded-none max-lg:shadow-none lg:h-full"
+                : "flex max-lg:h-[62%] max-lg:flex-none lg:h-full"
+              : "hidden"
+          } lg:shrink-0 ${
             marketplaceOpen && appMode === "imovel" && sideRailTab === "procurar"
-              ? "w-full max-w-[720px] overflow-hidden"
-              : "w-full max-w-[440px] overflow-y-auto custom-scrollbar"
+              ? "w-full lg:w-[560px] lg:max-w-[560px]"
+              : "w-full lg:w-[340px] lg:max-w-[340px]"
           }`}
         >
+          {/* Alça mobile — só no painel (não no marketplace tela cheia) */}
+          {!(marketplaceOpen && sideRailTab === "procurar") && (
+            <button
+              type="button"
+              onClick={closeSidePanel}
+              className="flex w-full shrink-0 flex-col items-center gap-1 border-b border-[#eef0f3] px-3 pb-1.5 pt-2 lg:hidden"
+              aria-label="Recolher painel e ver mapa"
+            >
+              <span className="h-1 w-10 rounded-full bg-[#c8c8d0]" />
+              <span className="text-[10px] font-semibold text-[#8a8a93]">
+                Toque para ver o mapa inteiro
+              </span>
+            </button>
+          )}
+
+          <aside
+            className={`flex min-h-0 w-full flex-1 flex-col bg-white print:max-w-none print:border-none lg:border-r lg:border-[#d1d1d5] ${
+              marketplaceOpen &&
+              appMode === "imovel" &&
+              sideRailTab === "procurar"
+                ? "overflow-hidden"
+                : "overflow-y-auto overscroll-contain custom-scrollbar pb-4 lg:pb-3"
+            }`}
+          >
           {appMode === "imovel" && sideRailTab === "atualizacoes" ? (
             <SideRailPlaceholder
               title="Atualizações"
@@ -1041,12 +1142,21 @@ export default function App() {
                 setMarketplaceOpen(false);
                 setOpenMarketListingId(null);
                 setSelectedListingId(null);
+                setDetailListingId(null);
                 setSideRailTab("procurar");
+                // Mobile: volta ao mapa inicial; desktop: mantém o painel
+                if (
+                  typeof window !== "undefined" &&
+                  !window.matchMedia("(min-width: 1024px)").matches
+                ) {
+                  setPanelOpen(false);
+                  setMobilePane("map");
+                }
               }}
               budget={budget}
-              setBudget={setBudget}
               quartos={filterQuartos}
-              setQuartos={setFilterQuartos}
+              advancedFilters={advancedFilters}
+              setAdvancedFilters={setAdvancedFilters}
             />
           ) : appMode === "imovel" && sideRailTab === "favoritos" ? (
             <SideRailPlaceholder
@@ -1086,6 +1196,7 @@ export default function App() {
                 setBudget={setBudget}
                 quartos={filterQuartos}
                 setQuartos={setFilterQuartos}
+                advancedAmenities={advancedFilters.amenities}
                 triggerSearch={searchTrigger}
                 onSelectRegion={previewRegion}
                 onHighlightRegions={setMatchHighlightIds}
@@ -1203,10 +1314,78 @@ export default function App() {
               )}
             </div>
           )}
-        </aside>
+          </aside>
+
+          {/* Seta no meio da linha divisor — desktop; no mobile usa Mapa/Lista */}
+          <button
+            type="button"
+            onClick={closeSidePanel}
+            className="absolute right-0 top-1/2 z-40 hidden h-14 w-7 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full border border-[#d1d1d5] bg-white text-[#006aff] shadow-md transition hover:bg-[#e8f1ff] hover:shadow-lg lg:flex"
+            title="Recolher painel"
+            aria-label="Recolher painel"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+            >
+              <path
+                d="M15 6 9 12l6 6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
 
         {mapPane}
+
+        {/* Reabrir folha no mobile / painel no desktop */}
+        {!panelOpen && (
+          <button
+            type="button"
+            onClick={openSidePanel}
+            className={`absolute z-40 flex items-center justify-center border border-[#d1d1d5] bg-[#0a1220] text-white shadow-lg transition hover:bg-[#122038] max-lg:bottom-4 max-lg:left-1/2 max-lg:-translate-x-1/2 max-lg:gap-1.5 max-lg:rounded-full max-lg:px-2.5 max-lg:py-1.5 lg:top-1/2 lg:h-14 lg:w-7 lg:-translate-y-1/2 lg:rounded-full lg:border-[#d1d1d5] lg:bg-white lg:text-[#006aff] lg:shadow-md lg:hover:bg-[#e8f1ff] ${
+              appMode === "imovel" ? "lg:left-[68px]" : "lg:left-2"
+            }`}
+            title="Abrir painel"
+            aria-label="Abrir painel"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4 max-lg:hidden"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+            >
+              <path
+                d="m9 6 6 6-6 6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <svg
+              viewBox="0 0 24 24"
+              className="h-3.5 w-3.5 lg:hidden"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+            >
+              <path
+                d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="text-[11px] font-bold lg:hidden">Menu</span>
+          </button>
+        )}
       </div>
+
+      {appMode === "imovel" && (
+        <ZillowMobileTabBar active={sideRailTab} onChange={openSideTab} />
+      )}
 
       {detailListingId && (() => {
         const detail = MARKETPLACE_LISTINGS.find((l) => l.id === detailListingId);
@@ -1219,6 +1398,7 @@ export default function App() {
               setDetailListingId(null);
               setImovelTool("explorar");
               setSideRailTab("procurar");
+              setMobilePane("content");
             }}
           />
         );
@@ -1235,7 +1415,7 @@ function SideRailPlaceholder({
   body: string;
 }) {
   return (
-    <div className="flex flex-1 flex-col items-start justify-center gap-2 p-6 animate-fade-in">
+    <div className="flex min-h-full flex-1 flex-col items-start justify-center gap-2 bg-white p-6 animate-fade-in">
       <h2 className="text-xl font-bold text-[#2a2a33]">{title}</h2>
       <p className="max-w-sm text-sm leading-relaxed text-[#6a6a72]">{body}</p>
       <p className="mt-2 text-xs font-semibold text-[#006aff]">

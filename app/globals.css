@@ -31,13 +31,35 @@
   --spacing-90: 22.5rem;
 }
 
+html {
+  height: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), "Segoe UI", Helvetica, Arial, sans-serif;
   min-height: 100dvh;
+  max-width: 100vw;
+  overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+/* iPhone notch / home indicator */
+.safe-pb {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+.safe-pt {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-map-controls {
+  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -60,8 +82,45 @@ body {
   }
 }
 
-.animate-fade-in {
-  animation: fade-in 0.28s ease-out;
+@keyframes filtro-backdrop {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-filtro-backdrop {
+  animation: filtro-backdrop 0.22s ease-out;
+}
+
+@keyframes filtro-sheet {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 639px) {
+  @keyframes filtro-sheet {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+.animate-filtro-sheet {
+  animation: filtro-sheet 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes market-pop {

@@ -54,12 +54,12 @@ export default function PropertyDetailOverlay({
   const address = `${listing.title.replace("·", "—")} · ${neighborhood}, Salvador — BA`;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 p-3 backdrop-blur-[2px] animate-fade-in sm:p-6">
+    <div className="fixed inset-0 z-[80] flex items-stretch justify-center bg-black/55 p-0 backdrop-blur-[2px] animate-fade-in sm:items-center sm:p-6">
       <div
         role="dialog"
         aria-modal="true"
         aria-label={listing.title}
-        className="flex max-h-[min(94vh,920px)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-market-pop"
+        className="flex h-[100dvh] max-h-[100dvh] w-full max-w-5xl flex-col overflow-hidden rounded-none bg-white shadow-2xl animate-market-pop sm:h-auto sm:max-h-[min(94vh,920px)] sm:rounded-2xl"
       >
         {/* Hero / galeria */}
         <div className="relative shrink-0 bg-[#0a1220]">

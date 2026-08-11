@@ -62,7 +62,7 @@ export default function Header({
         {(
           [
             { id: "imovel", label: "Comprar" },
-            { id: "negocio", label: "Empreender" },
+            { id: "negocio", label: "Abrir meu Negócio" },
           ] as const
         ).map((tab) => (
           <button

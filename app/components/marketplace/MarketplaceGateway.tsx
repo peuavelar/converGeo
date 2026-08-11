@@ -9,7 +9,7 @@ import {
 } from "../../data/marketplaceListings";
 import { NEIGHBORHOODS } from "../../data/neighborhoods";
 import { getRegionByIdSync } from "../../services/regionsApi";
-import { FiltroPill } from "../zillow/ZillowFilterBar";
+import { FiltroPill, type AdvancedFilters } from "../zillow/FiltroSheet";
 
 type MapTriggerProps = {
   hidden?: boolean;
@@ -27,12 +27,13 @@ export function MarketplaceMapTrigger({
     <button
       type="button"
       onClick={onRequestOpen}
-      className="absolute left-4 top-4 z-30 flex items-center gap-2 rounded-full bg-[#0a1220] px-4 py-2.5 text-sm font-bold text-white shadow-xl shadow-[#006aff]/25 ring-1 ring-[#006aff]/40 transition hover:bg-[#122038] hover:ring-[#006aff] animate-fade-in"
+      className="absolute left-2 top-2 z-30 flex items-center gap-1.5 rounded-full bg-[#0a1220] px-2.5 py-1.5 text-[11px] font-bold text-white shadow-lg ring-1 ring-[#006aff]/40 transition hover:bg-[#122038] animate-fade-in sm:left-4 sm:top-4 sm:gap-2 sm:px-3.5 sm:py-2 sm:text-sm"
     >
-      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#006aff] text-sm">
+      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#006aff] text-[10px] sm:h-6 sm:w-6 sm:text-xs">
         ◇
       </span>
-      Marketplace ({MARKETPLACE_LISTINGS.length})
+      Marketplace
+      <span className="opacity-80">({MARKETPLACE_LISTINGS.length})</span>
     </button>
   );
 }
@@ -45,10 +46,43 @@ type PanelProps = {
   onOpenDetail?: (listing: MarketplaceListing) => void;
   onClose: () => void;
   budget: number;
-  setBudget: (v: number) => void;
   quartos: number;
-  setQuartos: (v: number) => void;
+  advancedFilters: AdvancedFilters;
+  setAdvancedFilters: (v: AdvancedFilters) => void;
 };
+
+/** Heurísticas mock para suítes / vagas a partir do anúncio. */
+function listingSuites(l: MarketplaceListing) {
+  return Math.max(0, Math.min(l.beds, l.baths >= 2 ? l.baths - 1 : 0));
+}
+
+function listingParking(l: MarketplaceListing) {
+  if (l.beds >= 4 || l.price >= 1200000) return 2;
+  if (l.beds >= 2 || l.area >= 70) return 1;
+  return 0;
+}
+
+function listingAmenityTags(l: MarketplaceListing): string[] {
+  const tags: string[] = [];
+  if (l.score >= 75) tags.push("Elevador", "Portaria");
+  if (listingParking(l) > 0) tags.push("Garagem");
+  if (l.area >= 80) tags.push("Varanda");
+  if (l.score >= 85) tags.push("Piscina", "Academia");
+  if (l.price >= 900000) tags.push("Ar-condicionado", "Mobiliado");
+  if (l.beds <= 2) tags.push("Aceita animais");
+  return tags;
+}
+
+function matchesAdvanced(l: MarketplaceListing, adv: AdvancedFilters) {
+  if (l.baths < adv.banheiros) return false;
+  if (listingSuites(l) < adv.suites) return false;
+  if (listingParking(l) < adv.vagas) return false;
+  if (adv.amenities.length > 0) {
+    const tags = listingAmenityTags(l);
+    if (!adv.amenities.every((a) => tags.includes(a))) return false;
+  }
+  return true;
+}
 
 /** Painel estilo Zillow — lista de imóveis na coluna ao lado do mapa. */
 export default function MarketplaceListPanel({
@@ -59,9 +93,9 @@ export default function MarketplaceListPanel({
   onOpenDetail,
   onClose,
   budget,
-  setBudget,
   quartos,
-  setQuartos,
+  advancedFilters,
+  setAdvancedFilters,
 }: PanelProps) {
   const [filter, setFilter] = useState<"todos" | "alto" | "medio">("todos");
   const [query, setQuery] = useState("");
@@ -90,16 +124,27 @@ export default function MarketplaceListPanel({
         });
 
     const byFiltro = bySearch.filter(
-      (l) => l.price <= budget && l.beds >= quartos,
+      (l) =>
+        l.price <= budget &&
+        l.beds >= Math.max(quartos, 0) &&
+        matchesAdvanced(l, advancedFilters),
     );
-    // Se o filtro zerar a lista, mostra todos da busca (evita marketplace vazio)
     const relaxed = byFiltro.length === 0 && bySearch.length > 0;
     let result = relaxed ? bySearch : byFiltro;
 
-    // Prioriza imóveis dentro do orçamento/quartos
     result = [...result].sort((a, b) => {
-      const aOk = a.price <= budget && a.beds >= quartos ? 0 : 1;
-      const bOk = b.price <= budget && b.beds >= quartos ? 0 : 1;
+      const aOk =
+        a.price <= budget &&
+        a.beds >= quartos &&
+        matchesAdvanced(a, advancedFilters)
+          ? 0
+          : 1;
+      const bOk =
+        b.price <= budget &&
+        b.beds >= quartos &&
+        matchesAdvanced(b, advancedFilters)
+          ? 0
+          : 1;
       if (aOk !== bOk) return aOk - bOk;
       return a.price - b.price;
     });
@@ -115,7 +160,7 @@ export default function MarketplaceListPanel({
     }
 
     return { listings: result, filterRelaxed: relaxed };
-  }, [filter, focusedId, query, budget, quartos]);
+  }, [filter, focusedId, query, budget, quartos, advancedFilters]);
 
   const focusedListing =
     MARKETPLACE_LISTINGS.find((l) => l.id === focusedId) ?? null;
@@ -138,24 +183,16 @@ export default function MarketplaceListPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-[#f5f6f8] animate-fade-in">
-      {/* Orçamento encolhido */}
-      <button
-        type="button"
-        onClick={onClose}
-        className="flex shrink-0 items-center gap-3 border-b border-[#d1d1d5] bg-white px-3 py-2 text-left transition hover:bg-[#f8fafc]"
-      >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e8f1ff] text-sm font-bold text-[#006aff]">
-          ←
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[10px] font-bold uppercase tracking-wide text-[#6a6a72]">
-            Encontre onde seu dinheiro compra melhor
-          </p>
-          <p className="truncate text-xs font-semibold text-[#2a2a33]">
-            Toque para voltar ao orçamento · Salvador, BA
-          </p>
-        </div>
-      </button>
+      <div className="flex shrink-0 items-center border-b border-[#d1d1d5] bg-white px-3 py-2">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex items-center gap-1.5 rounded-full border border-[#d1d1d5] bg-white px-2.5 py-1 text-[11px] font-bold text-[#006aff] transition hover:bg-[#e8f1ff]"
+        >
+          <span className="text-xs leading-none">←</span>
+          Voltar ao mapa
+        </button>
+      </div>
 
       <header className="shrink-0 border-b border-[#e8e8ed] bg-white px-3 py-2.5">
         <h2 className="text-base font-bold text-[#2a2a33]">
@@ -189,11 +226,10 @@ export default function MarketplaceListPanel({
         ))}
         <div className="ml-auto shrink-0">
           <FiltroPill
-            budget={budget}
-            setBudget={setBudget}
-            quartos={quartos}
-            setQuartos={setQuartos}
-            align="right"
+            value={advancedFilters}
+            onChange={setAdvancedFilters}
+            compact
+            label="Filtro"
           />
         </div>
       </div>
@@ -238,8 +274,8 @@ export default function MarketplaceListPanel({
       <div className="custom-scrollbar flex-1 overflow-y-auto p-3">
         {filterRelaxed && (
           <p className="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
-            Nenhum imóvel no filtro atual (orçamento/quartos). Mostrando todos os
-            anúncios — ajuste em Filtro.
+            Nenhum imóvel no filtro atual. Mostrando todos os anúncios — ajuste em
+            Filtros.
           </p>
         )}
         {listings.length === 0 && (

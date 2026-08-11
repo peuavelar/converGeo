@@ -13,6 +13,8 @@ type ChatMessage = {
 type Props = {
   onSelectRegion: (id: string) => void;
   suggestions?: string[];
+  /** Nomes do top ranking para atalhos / respostas. */
+  rankingHint?: string[];
 };
 
 function uid() {
@@ -38,6 +40,12 @@ async function resolveFromChat(
   return null;
 }
 
+function wantsRanking(q: string) {
+  return /ranking|melhor(es)?|oportunidad|top\s*\d*|onde vale|recomend/.test(
+    q.toLowerCase(),
+  );
+}
+
 const INTRO: ChatMessage[] = [
   {
     id: "intro-1",
@@ -47,14 +55,16 @@ const INTRO: ChatMessage[] = [
   {
     id: "intro-2",
     role: "sino",
-    text: "Me conta um bairro, região ou endereço — eu cruzo preço, infraestrutura, crescimento e oportunidade pra te mostrar o potencial.",
+    text: "Me conta um bairro ou região — eu cruzo preço, infraestrutura e oportunidade. Você também pode abrir o ranking abaixo pela setinha 🔥.",
   },
 ];
 
 export default function OpportunityHero({
   onSelectRegion,
-  suggestions = ["Pituba", "Imbuí", "Paralela", "Horto Florestal", "Itapuã"],
+  suggestions,
+  rankingHint = ["Pituba", "Imbuí", "Paralela", "Horto Florestal", "Itapuã"],
 }: Props) {
+  const chips = suggestions?.length ? suggestions : rankingHint;
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>(INTRO);
   const [busy, setBusy] = useState(false);
@@ -73,12 +83,25 @@ export default function OpportunityHero({
     setBusy(true);
 
     try {
+      if (wantsRanking(text) && !NEIGHBORHOODS.some((n) => text.toLowerCase().includes(n.name.toLowerCase()))) {
+        const top = rankingHint.slice(0, 5);
+        const reply =
+          top.length > 0
+            ? `No ranking de oportunidade agora: ${top.map((n, i) => `${i + 1}º ${n}`).join(", ")}. Abra o menu 🔥 abaixo ou digite o nome de uma região que eu te dou os detalhes.`
+            : "Abra o menu 🔥 “Regiões com maior oportunidade” para ver o ranking. Depois digite o nome de uma região que eu detalho.";
+        setMessages((prev) => [
+          ...prev,
+          { id: uid(), role: "sino", text: reply },
+        ]);
+        return;
+      }
+
       const match = await resolveFromChat(text);
       if (match) {
         const region = getRegionByIdSync(match.id);
         const reply = region
-          ? `Boa! Analisei ${region.name}: Opportunity Score ${region.score}. Preço médio ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(region.precoM2)}/m² e valorização de +${region.valorizacao12m.toFixed(1)}% em 12 meses. Abri a ficha no mapa.`
-          : `Encontrei ${match.name} no banco. Abrindo a análise no mapa.`;
+          ? `Boa! Analisei ${region.name}: Opportunity Score ${region.score}. Preço médio ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(region.precoM2)}/m² e valorização de +${region.valorizacao12m.toFixed(1)}% em 12 meses. Oferta ${region.oferta.toLowerCase()}. ${region.motivo} Marquei no mapa — peça mais se quiser (ex.: infraestrutura, comparar com outro bairro).`
+          : `Encontrei ${match.name} no banco. Abrindo no mapa.`;
         setMessages((prev) => [
           ...prev,
           { id: uid(), role: "sino", text: reply },
@@ -90,7 +113,7 @@ export default function OpportunityHero({
           {
             id: uid(),
             role: "sino",
-            text: "Não achei esse local no banco ainda. Digite o nome de um bairro (ex.: Pituba, Imbuí, Paralela) ou use um atalho abaixo.",
+            text: "Não achei esse local no banco ainda. Digite um bairro (ex.: Pituba, Imbuí, Paralela), use um atalho, ou peça “ranking” para eu listar as melhores oportunidades.",
           },
         ]);
       }
@@ -173,7 +196,7 @@ export default function OpportunityHero({
           <div className="max-w-[88%] rounded-2xl rounded-bl-md border border-[#1e3a5f] bg-[#101a2c] px-3.5 py-2.5">
             <p className="text-[12px] text-[#9fb3d1]">Atalhos rápidos:</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {suggestions.map((s) => (
+              {chips.map((s) => (
                 <button
                   key={s}
                   type="button"
