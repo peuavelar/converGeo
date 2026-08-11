@@ -114,9 +114,9 @@ export default function App() {
     DEFAULT_NEARBY_FILTERS,
   );
   const [nearbyLoading, setNearbyLoading] = useState(false);
-  const [nearbySource, setNearbySource] = useState<"osm" | "mock" | null>(
-    null,
-  );
+  const [nearbySource, setNearbySource] = useState<
+    "osm" | "mock" | "backend" | null
+  >(null);
   const [nearbyRadiusM, setNearbyRadiusM] = useState(DEFAULT_NEARBY_RADIUS_M);
   const [selectedListingId, setSelectedListingId] = useState<string | null>(
     null,
@@ -441,14 +441,16 @@ export default function App() {
 
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          searchQuery + ", Salvador, Bahia",
-        )}&limit=1`,
+        `/api/geo/geocode?q=${encodeURIComponent(searchQuery)}&limit=1`,
+        { headers: { Accept: "application/json" } },
       );
-      const data = await res.json();
-      if (data && data.length > 0) {
-        const lat = parseFloat(data[0].lat);
-        const lng = parseFloat(data[0].lon);
+      const data = (await res.json()) as {
+        hits?: { lat: number; lng: number; name: string }[];
+      };
+      const hit = data.hits?.[0];
+      if (hit) {
+        const lat = hit.lat;
+        const lng = hit.lng;
         flyTo(lat, lng, 15);
         if (appMode === "imovel") {
           selectNeighborhood(findNearestNeighborhood(lat, lng));
@@ -547,15 +549,18 @@ export default function App() {
         if (hex.lat && hex.lng && !newAddresses[hex.h3_index]) {
           try {
             const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${hex.lat}&lon=${hex.lng}&zoom=14`,
+              `/api/geo/reverse?lat=${hex.lat}&lng=${hex.lng}`,
+              { headers: { Accept: "application/json" } },
             );
-            const data = await res.json();
-            const addr = data.address || {};
+            const data = (await res.json()) as {
+              neighbourhood?: string;
+              suburb?: string;
+              displayName?: string;
+            };
             const localName =
-              addr.suburb ||
-              addr.neighbourhood ||
-              addr.road ||
-              addr.city_district ||
+              data.suburb ||
+              data.neighbourhood ||
+              data.displayName?.split(",")[0] ||
               "Salvador";
             newAddresses[hex.h3_index] = localName;
             updated = true;
@@ -1076,6 +1081,8 @@ export default function App() {
                 <span className="text-[#006aff]">Buscando no OpenStreetMap…</span>
               ) : nearbySource === "osm" ? (
                 <span className="text-[#1a7f37]">Dados: OpenStreetMap</span>
+              ) : nearbySource === "backend" ? (
+                <span className="text-[#006aff]">Dados: motor Python</span>
               ) : (
                 <span className="text-[#b45309]">Estimativa (OSM indisponível)</span>
               )}

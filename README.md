@@ -31,16 +31,22 @@ Repositório: [github.com/peuavelar/converGeo](https://github.com/peuavelar/conv
 ```
 convergeo-front/
 ├── app/
+│   ├── api/geo/             # BFF OSM (nearby, geocode, reverse) + health
 │   ├── components/          # UI (mapa, marketplace, opportunity, zillow)
 │   ├── data/                # Mocks (regiões, listings, bairros)
-│   ├── hooks/               # Ex.: typewriter da busca
-│   ├── services/            # nearbyPlaces, regionsApi, routing
-│   ├── utils/               # scores, ícones de mapa
-│   ├── page.tsx             # Shell principal
+│   ├── hooks/
+│   ├── services/            # Cliente UI → BFF / mocks
+│   ├── page.tsx
 │   └── globals.css
-├── public/                  # PWA, avatares, assets
-├── reference-api/           # Referência FastAPI (opcional)
-├── VERSION.md               # Histórico de releases
+├── lib/
+│   ├── config/              # DATA_PROVIDER, env
+│   ├── geo/                 # Contratos JSON (Python-ready)
+│   ├── osm/                 # Overpass + Nominatim
+│   ├── providers/           # osm | backend | hybrid
+│   └── cache/
+├── docs/DATA_ARCHITECTURE.md
+├── .env.example
+├── public/
 └── package.json
 ```
 
@@ -69,9 +75,18 @@ Sem API, o modo imóvel usa mocks locais de Salvador.
 
 | Uso | API | Docs / teste |
 |-----|-----|----------------|
-| POIs no mapa | **Overpass** | https://overpass-api.de/api/interpreter · [Overpass Turbo](https://overpass-turbo.eu/) |
-| Busca de endereço | **Nominatim** | https://nominatim.openstreetmap.org/ |
+| POIs no mapa | **Overpass** (via `/api/geo/nearby`) | https://overpass-api.de/api/interpreter · [Overpass Turbo](https://overpass-turbo.eu/) |
+| Busca de endereço | **Nominatim** (via `/api/geo/geocode`) | https://nominatim.openstreetmap.org/ |
+| Projeto OSM | GitHub | https://github.com/openstreetmap |
 | Política Overpass | OSMF | https://operations.osmfoundation.org/policies/overpass/ |
+
+Arquitetura BFF + motor Python: [docs/DATA_ARCHITECTURE.md](./docs/DATA_ARCHITECTURE.md)
+
+Healthcheck local:
+
+```bash
+curl http://localhost:3000/api/health
+```
 
 No app, ao clicar no mapa, o selo indica **Dados: OpenStreetMap** ou **Estimativa** (fallback).
 

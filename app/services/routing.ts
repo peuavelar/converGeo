@@ -64,17 +64,19 @@ export async function geocodeInSalvador(
 
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-        `${query}, Salvador, Bahia, Brasil`,
-      )}&limit=1`,
+      `/api/geo/geocode?q=${encodeURIComponent(query)}&limit=1`,
       { headers: { Accept: "application/json" } },
     );
-    const data = (await res.json()) as { lat: string; lon: string; display_name: string }[];
-    if (!data?.[0]) return null;
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      hits?: { lat: number; lng: number; name: string }[];
+    };
+    const hit = data.hits?.[0];
+    if (!hit) return null;
     return {
-      lat: Number(data[0].lat),
-      lng: Number(data[0].lon),
-      name: data[0].display_name.split(",")[0] || query,
+      lat: hit.lat,
+      lng: hit.lng,
+      name: hit.name || query,
     };
   } catch {
     return null;
