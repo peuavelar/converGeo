@@ -48,6 +48,13 @@ body {
   touch-action: manipulation;
 }
 
+/* MapLibre / Deck.gl need none so pan & pinch work on mobile */
+.map-touch,
+.map-touch .maplibregl-canvas,
+.map-touch canvas {
+  touch-action: none;
+}
+
 /* iPhone notch / home indicator */
 .safe-pb {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));

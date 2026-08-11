@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import DeckGL from "@deck.gl/react";
 import { H3HexagonLayer } from "@deck.gl/geo-layers";
-import { ScatterplotLayer, PathLayer, PolygonLayer, TextLayer } from "@deck.gl/layers";
+import { ScatterplotLayer, PathLayer, PolygonLayer, TextLayer, IconLayer } from "@deck.gl/layers";
 import { FlyToInterpolator } from "@deck.gl/core";
 import { Map } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -46,9 +46,7 @@ import type {
 import {
   fetchNearbyAmenities,
   radiusCirclePolygon,
-  NEARBY_CATEGORY_META,
   DEFAULT_NEARBY_RADIUS_M,
-  nextNearbyRadius,
   type NearbyFilters,
   type NearbyPlace,
 } from "./services/nearbyPlaces";
@@ -65,11 +63,19 @@ import MarketplaceListPanel, {
   MarketplaceMapTrigger,
 } from "./components/marketplace/MarketplaceGateway";
 import PropertyDetailOverlay from "./components/marketplace/PropertyDetailOverlay";
+import MapNearbyLegend from "./components/map/MapNearbyLegend";
+import MapPinListingsCard from "./components/map/MapPinListingsCard";
 import {
   MARKETPLACE_LISTINGS,
   marketplacePriceLabel,
   type MarketplaceListing,
 } from "./data/marketplaceListings";
+import {
+  MAP_CLICK_PIN,
+  NEARBY_MAP_ICONS,
+  ROUTE_DEST_ICON,
+  ROUTE_ORIGIN_ICON,
+} from "./utils/mapMarkerIcons";
 import {
   DEFAULT_IMOVEL_FILTERS,
   type ImovelListingFilters,
@@ -121,12 +127,19 @@ export default function App() {
   const [marketplaceOpen, setMarketplaceOpen] = useState(false);
   const [sideRailTab, setSideRailTab] = useState<SideRailTab>("procurar");
   const [detailListingId, setDetailListingId] = useState<string | null>(null);
+  const [hoveredPoi, setHoveredPoi] = useState<NearbyPlace | null>(null);
+  const [pinCardOpen, setPinCardOpen] = useState(false);
+  const [mapSize, setMapSize] = useState({ width: 0, height: 0 });
+  const [marketplaceRegionId, setMarketplaceRegionId] = useState<string | null>(
+    null,
+  );
   /** Mobile: mapa primeiro; desktop: painel aberto. */
   const [mobilePane, setMobilePane] = useState<"content" | "map">("map");
   /** Desktop: menu aberto. Mobile (1º acesso): mapa em tela cheia. */
   const [panelOpen, setPanelOpen] = useState(false);
   const nearbyAbortRef = useRef<AbortController | null>(null);
   const nearbyReqIdRef = useRef(0);
+  const mapPaneRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
@@ -143,6 +156,19 @@ export default function App() {
     mq.addEventListener("change", syncLayout);
     return () => mq.removeEventListener("change", syncLayout);
   }, []);
+
+  useEffect(() => {
+    const el = mapPaneRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      setMapSize({ width: Math.round(r.width), height: Math.round(r.height) });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [panelOpen, marketplaceOpen, appMode, imovelTool]);
 
   const [hexData, setHexData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -223,7 +249,7 @@ export default function App() {
     setImovelTool("explorar");
     setRegionSheetOpen(true);
     flyTo(n.lat, n.lng, 14.2);
-    void loadNearby(n.lat, n.lng, n.name);
+    setMapFocusPin(n.lat, n.lng, n.name);
   };
 
   const selectRegion = (id: string) => {
@@ -235,17 +261,64 @@ export default function App() {
     setImovelTool("explorar");
     setRegionSheetOpen(true);
     flyTo(region.lat, region.lng, 14.2);
-    void loadNearby(region.lat, region.lng, region.name);
+    setMapFocusPin(region.lat, region.lng, region.name);
   };
 
   const clearRegion = () => {
     setActiveRegionId(null);
     setActiveNeighborhood(null);
     setRegionSheetOpen(false);
+    setPinCardOpen(false);
     setNearbyCenter(null);
     setNearbyCenterLabel(null);
     setNearbyPlaces([]);
     setNearbySource(null);
+    setHoveredPoi(null);
+  };
+
+  const openRegionMarketplace = (regionId: string | null, label?: string) => {
+    if (!regionId) return;
+    const region = getRegionByIdSync(regionId);
+    setMarketplaceRegionId(regionId);
+    setActiveRegionId(regionId);
+    setNearbyCenterLabel(label || region?.name || nearbyCenterLabel);
+    setPinCardOpen(true);
+    setRegionSheetOpen(true);
+    setMarketplaceOpen(true);
+    setSideRailTab("procurar");
+    setPanelOpen(true);
+    setMobilePane("content");
+    if (region && !nearbyCenter) {
+      setMapFocusPin(region.lat, region.lng, region.name);
+      flyTo(region.lat, region.lng, 13.8);
+    }
+  };
+
+  /** Pin de foco no mapa sem carregar POIs (oportunidades = marketplace). */
+  const setMapFocusPin = (lat: number, lng: number, label: string) => {
+    nearbyAbortRef.current?.abort();
+    setNearbyCenter({ lat, lng });
+    setNearbyCenterLabel(label);
+    setNearbyPlaces([]);
+    setNearbySource(null);
+    setNearbyLoading(false);
+    setHoveredPoi(null);
+  };
+
+  const openListingDetail = (listing: MarketplaceListing) => {
+    setSelectedListingId(listing.id);
+    setDetailListingId(listing.id);
+    setOpenMarketListingId(listing.id);
+    setSideRailTab("procurar");
+    setMarketplaceOpen(false);
+    setPanelOpen(false);
+    setPinCardOpen(false);
+    setActiveRegionId(listing.regionId);
+    const n = NEIGHBORHOODS.find((x) => x.id === listing.regionId);
+    setActiveNeighborhood(n ?? null);
+    setRegionSheetOpen(false);
+    flyTo(listing.lat, listing.lng, 14.2);
+    void loadNearby(listing.lat, listing.lng, listing.title);
   };
 
   const selectMapPoint = (lat: number, lng: number) => {
@@ -253,13 +326,15 @@ export default function App() {
     setActiveRegionId(nearest.id);
     const n = NEIGHBORHOODS.find((x) => x.id === nearest.id);
     setActiveNeighborhood(n ?? null);
-    setRegionSheetOpen(true);
+    setRegionSheetOpen(false);
+    setPinCardOpen(true);
     setSideRailTab("procurar");
-    setMarketplaceOpen(true);
-    setMobilePane("content");
-    setPanelOpen(true);
-    // Marca o ponto clicado (livre) e carrega serviços no raio de 2 km
+    setMarketplaceOpen(false);
+    setPanelOpen(false);
+    setSelectedListingId(null);
+    // Pin + card de imóveis + símbolos de serviços próximos
     void loadNearby(lat, lng, nearest.name);
+    flyTo(lat, lng, 14.2);
   };
 
   const previewRegion = (id: string) => {
@@ -270,7 +345,7 @@ export default function App() {
     setActiveNeighborhood(n ?? null);
     setRegionSheetOpen(true);
     flyTo(region.lat, region.lng, 13.8);
-    void loadNearby(region.lat, region.lng, region.name);
+    setMapFocusPin(region.lat, region.lng, region.name);
     setPanelOpen(true);
     setMobilePane("content");
   };
@@ -528,7 +603,8 @@ export default function App() {
     setNearbyCenter({ lat, lng });
     setNearbyCenterLabel(label);
     setNearbyLoading(true);
-    setNearbySource("mock");
+    setNearbySource(null);
+    setNearbyPlaces([]);
 
     try {
       const result = await fetchNearbyAmenities(lat, lng, {
@@ -552,37 +628,19 @@ export default function App() {
     }
   };
 
-  const adjustNearbyRadius = (dir: 1 | -1) => {
-    if (!nearbyCenter) return;
-    const next = nextNearbyRadius(nearbyRadiusM, dir);
-    if (next === nearbyRadiusM) return;
-    setNearbyRadiusM(next);
-    void loadNearby(
-      nearbyCenter.lat,
-      nearbyCenter.lng,
-      nearbyCenterLabel || "Ponto selecionado",
-      next,
-    );
-  };
-
   const handleMapClick = (info: any) => {
     if (appMode === "imovel") {
       // Clique em pin de preço do marketplace
       const listing = info.object as MarketplaceListing | undefined;
       if (listing?.price != null && listing?.regionId && listing?.id?.startsWith("mkt-")) {
-        setSelectedListingId(listing.id);
-        setDetailListingId(listing.id);
-        setOpenMarketListingId(listing.id);
-        setSideRailTab("procurar");
-        setMarketplaceOpen(true);
-        setPanelOpen(true);
-        setMobilePane("content");
-        setActiveRegionId(listing.regionId);
-        const n = NEIGHBORHOODS.find((x) => x.id === listing.regionId);
-        setActiveNeighborhood(n ?? null);
-        setRegionSheetOpen(true);
-        flyTo(listing.lat, listing.lng, 14.2);
-        void loadNearby(listing.lat, listing.lng, listing.title);
+        openListingDetail(listing);
+        return;
+      }
+
+      // Clique em ícone de local próximo (legenda / detalhe)
+      const poi = info.object as NearbyPlace | undefined;
+      if (poi?.category && poi?.id) {
+        setHoveredPoi(poi);
         return;
       }
 
@@ -604,7 +662,7 @@ export default function App() {
         return;
       }
 
-      // Clique livre: região + dados + abre marketplace
+      // Clique livre: região + imóveis à venda (tags de preço no mapa)
       setSelectedListingId(null);
       setOpenMarketListingId(null);
       selectMapPoint(lat, lng);
@@ -677,89 +735,77 @@ export default function App() {
       return [
         ...(nearbyCenter
           ? [
-              new PolygonLayer({
-                id: "nearby-radius",
-                data: [
-                  {
-                    polygon: radiusCirclePolygon(
-                      nearbyCenter.lat,
-                      nearbyCenter.lng,
-                      nearbyRadiusM,
-                    ),
-                  },
-                ],
-                pickable: false,
-                stroked: true,
-                filled: true,
-                getPolygon: (d: { polygon: [number, number][] }) => d.polygon,
-                getFillColor: [0, 106, 255, 28],
-                getLineColor: [0, 106, 255, 160],
-                lineWidthMinPixels: 2,
-              }),
-              new ScatterplotLayer({
+              new IconLayer({
                 id: "map-click-pin",
                 data: [nearbyCenter],
                 pickable: false,
-                radiusUnits: "meters",
                 getPosition: (d: LatLng) => [d.lng, d.lat],
-                getRadius: 80,
-                getFillColor: [0, 106, 255, 255],
-                stroked: true,
-                getLineColor: [255, 255, 255, 255],
-                lineWidthMinPixels: 3,
-              }),
-              new ScatterplotLayer({
-                id: "nearby-pois",
-                data: nearbyPlaces.filter((p) => nearbyFilters[p.category]),
-                pickable: false,
-                radiusUnits: "meters",
-                getPosition: (d: NearbyPlace) => [d.lng, d.lat],
-                getRadius: 70,
-                getFillColor: (d: NearbyPlace) => [
-                  ...NEARBY_CATEGORY_META[d.category].color,
-                  230,
-                ],
-                stroked: true,
-                getLineColor: [255, 255, 255, 255],
-                lineWidthMinPixels: 2,
-                updateTriggers: {
-                  getFillColor: [JSON.stringify(nearbyFilters)],
-                  data: [nearbyPlaces.length, JSON.stringify(nearbyFilters)],
-                },
-              }),
-              new TextLayer({
-                id: "nearby-symbols",
-                data: nearbyPlaces.filter((p) => nearbyFilters[p.category]),
-                pickable: false,
-                getPosition: (d: NearbyPlace) => [d.lng, d.lat],
-                getText: (d: NearbyPlace) =>
-                  NEARBY_CATEGORY_META[d.category].symbol,
-                getSize: 18,
-                getColor: [20, 20, 30, 255],
-                getPixelOffset: [0, -16],
+                getIcon: () => MAP_CLICK_PIN,
+                getSize: 40,
+                sizeUnits: "pixels",
+                sizeMinPixels: 28,
+                sizeMaxPixels: 48,
                 billboard: true,
-                fontSettings: { sdf: false },
-                updateTriggers: {
-                  getText: [nearbyPlaces.length],
-                  data: [nearbyPlaces.length, JSON.stringify(nearbyFilters)],
-                },
               }),
+              ...(nearbyPlaces.length > 0
+                ? [
+                    new PolygonLayer({
+                      id: "nearby-radius",
+                      data: [
+                        {
+                          polygon: radiusCirclePolygon(
+                            nearbyCenter.lat,
+                            nearbyCenter.lng,
+                            nearbyRadiusM,
+                          ),
+                        },
+                      ],
+                      pickable: false,
+                      stroked: true,
+                      filled: true,
+                      getPolygon: (d: { polygon: [number, number][] }) =>
+                        d.polygon,
+                      getFillColor: [0, 106, 255, 22],
+                      getLineColor: [0, 106, 255, 140],
+                      lineWidthMinPixels: 1.5,
+                    }),
+                    new IconLayer({
+                      id: "nearby-pois-icons",
+                      data: nearbyPlaces.filter(
+                        (p) => nearbyFilters[p.category],
+                      ),
+                      pickable: true,
+                      getPosition: (d: NearbyPlace) => [d.lng, d.lat],
+                      getIcon: (d: NearbyPlace) =>
+                        NEARBY_MAP_ICONS[d.category],
+                      getSize: 34,
+                      sizeUnits: "pixels",
+                      sizeMinPixels: 26,
+                      sizeMaxPixels: 42,
+                      billboard: true,
+                      updateTriggers: {
+                        getIcon: [JSON.stringify(nearbyFilters)],
+                        data: [
+                          nearbyPlaces.length,
+                          JSON.stringify(nearbyFilters),
+                        ],
+                      },
+                    }),
+                  ]
+                : []),
             ]
           : []),
         ...(routeOrigin
           ? [
-              new ScatterplotLayer({
+              new IconLayer({
                 id: "route-origin",
                 data: [routeOrigin],
                 pickable: false,
-                radiusUnits: "meters",
                 getPosition: (d: LatLng) => [d.lng, d.lat],
-                getRadius: 90,
-                getFillColor: [0, 106, 255, 255],
-                getLineColor: [255, 255, 255, 255],
-                lineWidthMinPixels: 2,
-                stroked: true,
-                filled: true,
+                getIcon: () => ROUTE_ORIGIN_ICON,
+                getSize: 32,
+                sizeUnits: "pixels",
+                billboard: true,
               }),
             ]
           : []),
@@ -774,21 +820,19 @@ export default function App() {
                 getColor: (d: RouteLeg) => [...d.color, 220],
                 getWidth: 5,
               }),
-              new ScatterplotLayer({
+              new IconLayer({
                 id: "frequent-destinations",
                 data: routeLegs,
                 pickable: true,
-                radiusUnits: "meters",
                 getPosition: (d: RouteLeg) => d.path[d.path.length - 1],
-                getRadius: 70,
-                getFillColor: (d: RouteLeg) => [...d.color, 255],
-                stroked: true,
-                getLineColor: [255, 255, 255, 255],
-                lineWidthMinPixels: 2,
+                getIcon: () => ROUTE_DEST_ICON,
+                getSize: 32,
+                sizeUnits: "pixels",
+                billboard: true,
               }),
             ]
           : []),
-        // Pins de preço estilo Airbnb (casas à venda no marketplace)
+        // Pins de preço estilo Airbnb (imóveis à venda)
         new TextLayer({
           id: "marketplace-price-pills",
           data: MARKETPLACE_LISTINGS,
@@ -805,23 +849,30 @@ export default function App() {
           background: true,
           backgroundPadding: [12, 6, 12, 6],
           backgroundBorderRadius: 20,
-          getColor: (d: MarketplaceListing) =>
-            d.id === selectedListingId
-              ? [255, 255, 255, 255]
-              : [34, 34, 34, 255],
-          getBackgroundColor: (d: MarketplaceListing) =>
-            d.id === selectedListingId
-              ? [0, 106, 255, 255]
-              : [255, 255, 255, 255],
-          getBorderColor: (d: MarketplaceListing) =>
-            d.id === selectedListingId
-              ? [0, 88, 214, 255]
-              : [220, 220, 225, 255],
+          getColor: (d: MarketplaceListing) => {
+            if (d.id === selectedListingId) return [255, 255, 255, 255];
+            if (activeRegionId && d.regionId !== activeRegionId)
+              return [90, 90, 98, 200];
+            return [34, 34, 34, 255];
+          },
+          getBackgroundColor: (d: MarketplaceListing) => {
+            if (d.id === selectedListingId) return [0, 106, 255, 255];
+            if (activeRegionId && d.regionId === activeRegionId)
+              return [255, 255, 255, 255];
+            if (activeRegionId) return [245, 245, 247, 220];
+            return [255, 255, 255, 255];
+          },
+          getBorderColor: (d: MarketplaceListing) => {
+            if (d.id === selectedListingId) return [0, 88, 214, 255];
+            if (activeRegionId && d.regionId === activeRegionId)
+              return [0, 106, 255, 200];
+            return [220, 220, 225, 255];
+          },
           getBorderWidth: 1,
           updateTriggers: {
-            getColor: [selectedListingId],
-            getBackgroundColor: [selectedListingId],
-            getBorderColor: [selectedListingId],
+            getColor: [selectedListingId, activeRegionId],
+            getBackgroundColor: [selectedListingId, activeRegionId],
+            getBorderColor: [selectedListingId, activeRegionId],
           },
         }),
       ];
@@ -893,6 +944,8 @@ export default function App() {
     nearbyPlaces,
     nearbyFilters,
     selectedListingId,
+    detailListingId,
+    activeRegionId,
     visibleHexData,
     competitorPins,
     colorMode,
@@ -903,27 +956,51 @@ export default function App() {
 
   const mapPane = (
     <div
-      className={`relative min-h-0 min-w-0 bg-[#e8e8ed] order-1 lg:order-2 ${
-        panelOpen && marketplaceOpen && sideRailTab === "procurar"
+      ref={mapPaneRef}
+      className={`map-touch relative min-h-0 min-w-0 bg-[#e8e8ed] order-1 lg:order-2 ${
+        panelOpen &&
+        marketplaceOpen &&
+        sideRailTab === "procurar" &&
+        !pinCardOpen
           ? "hidden lg:flex lg:flex-1"
-          : panelOpen
-            ? "flex max-lg:h-[38%] max-lg:flex-none lg:flex-1"
-            : "flex flex-1"
+          : panelOpen && pinCardOpen && marketplaceOpen
+            ? "flex max-lg:h-[52%] max-lg:flex-none lg:flex-1"
+            : panelOpen && imovelTool === "explorar"
+              ? "flex max-lg:h-[46%] max-lg:flex-none lg:flex-1"
+              : panelOpen
+                ? "flex max-lg:h-[40%] max-lg:flex-none lg:flex-1"
+                : "flex flex-1"
       }`}
     >
       <DeckGL
         viewState={viewState}
         onViewStateChange={(e: any) => setViewState(e.viewState)}
         controller={{
-          dragRotate: appMode !== "imovel",
+          dragPan: true,
+          scrollZoom: true,
+          doubleClickZoom: true,
+          touchZoom: true,
           touchRotate: appMode !== "imovel",
+          dragRotate: appMode !== "imovel",
+          keyboard: true,
         }}
         onClick={handleMapClick}
+        onHover={(info: any) => {
+          if (appMode !== "imovel" || nearbyPlaces.length === 0) {
+            if (hoveredPoi) setHoveredPoi(null);
+            return;
+          }
+          if (info.layer?.id === "nearby-pois-icons" && info.object) {
+            setHoveredPoi(info.object as NearbyPlace);
+          } else if (!info.object) {
+            setHoveredPoi(null);
+          }
+        }}
         layers={layers}
         getCursor={({ isDragging }: any) =>
-          isDragging ? "grabbing" : appMode === "imovel" ? "crosshair" : "grab"
+          isDragging ? "grabbing" : "grab"
         }
-        style={{ width: "100%", height: "100%" }}
+        style={{ width: "100%", height: "100%", touchAction: "none" }}
       >
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <Map mapStyle={MAP_STYLES[currentStyle].url as any} />
@@ -966,6 +1043,55 @@ export default function App() {
         />
       </div>
 
+      {appMode === "imovel" &&
+        pinCardOpen &&
+        nearbyCenter &&
+        !detailListingId &&
+        imovelTool !== "rotas" && (
+          <MapPinListingsCard
+            lat={nearbyCenter.lat}
+            lng={nearbyCenter.lng}
+            regionId={activeRegionId}
+            regionName={nearbyCenterLabel}
+            viewState={viewState}
+            mapSize={mapSize}
+            onSelect={openListingDetail}
+            onClose={() => {
+              setPinCardOpen(false);
+              setNearbyCenter(null);
+              setNearbyCenterLabel(null);
+            }}
+            onSeeAll={() => {
+              openRegionMarketplace(activeRegionId, nearbyCenterLabel || undefined);
+            }}
+          />
+        )}
+
+      {appMode === "imovel" &&
+        nearbyCenter &&
+        (nearbyLoading || nearbyPlaces.length > 0) && (
+          <div className="pointer-events-none absolute right-2 top-3 z-20 sm:right-3 sm:top-4">
+            <div className="rounded-full border border-[#d1d1d5] bg-white/95 px-2.5 py-1 text-[10px] font-bold shadow-md backdrop-blur-sm">
+              {nearbyLoading && !nearbyPlaces.length ? (
+                <span className="text-[#006aff]">Buscando no OpenStreetMap…</span>
+              ) : nearbySource === "osm" ? (
+                <span className="text-[#1a7f37]">Dados: OpenStreetMap</span>
+              ) : (
+                <span className="text-[#b45309]">Estimativa (OSM indisponível)</span>
+              )}
+            </div>
+          </div>
+        )}
+
+      {appMode === "imovel" &&
+        !detailListingId &&
+        nearbyPlaces.length > 0 && (
+          <MapNearbyLegend
+            active={hoveredPoi}
+            className="top-14 sm:top-16"
+          />
+        )}
+
       {appMode === "imovel" && (
         <MarketplaceMapTrigger
           hidden={marketplaceOpen && panelOpen}
@@ -981,19 +1107,12 @@ export default function App() {
       {appMode === "imovel" && regionSheetOpen && imovelTool !== "rotas" && (
         <RegionHexSheet
           regionId={activeRegionId}
-          onClose={clearRegion}
+          onClose={() => setRegionSheetOpen(false)}
           onOpenFull={(id) => {
             selectRegion(id);
             setPanelOpen(true);
             setMobilePane("content");
           }}
-          nearbyPlaces={nearbyPlaces}
-          nearbyLoading={nearbyLoading}
-          nearbyFilters={nearbyFilters}
-          setNearbyFilters={setNearbyFilters}
-          nearbySource={nearbySource}
-          nearbyRadiusM={nearbyRadiusM}
-          onNearbyRadiusChange={adjustNearbyRadius}
         />
       )}
     </div>
@@ -1031,13 +1150,6 @@ export default function App() {
           setSearchError("");
           setMobilePane("content");
         }}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        onSearch={(e) => {
-          setMobilePane("content");
-          handleAddressSearch(e);
-        }}
-        isSearching={isSearching}
       />
 
       {appMode === "imovel" && (
@@ -1050,12 +1162,13 @@ export default function App() {
           }}
           filters={advancedFilters}
           setFilters={setAdvancedFilters}
-          onFind={() => {
-            setImovelTool("orcamento");
-            setSearchTrigger((n) => n + 1);
-            setPanelOpen(true);
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          onSearch={(e) => {
             setMobilePane("content");
+            handleAddressSearch(e);
           }}
+          isSearching={isSearching}
         />
       )}
 
@@ -1073,9 +1186,13 @@ export default function App() {
         <div
           className={`relative z-20 order-2 min-h-0 flex-col bg-white shadow-[0_-6px_24px_rgba(0,0,0,0.12)] max-lg:rounded-t-2xl lg:order-1 lg:rounded-none lg:shadow-none ${
             panelOpen
-              ? marketplaceOpen && sideRailTab === "procurar"
-                ? "flex max-lg:h-full max-lg:flex-1 max-lg:rounded-none max-lg:shadow-none lg:h-full"
-                : "flex max-lg:h-[62%] max-lg:flex-none lg:h-full"
+              ? marketplaceOpen && sideRailTab === "procurar" && pinCardOpen
+                ? "flex max-lg:h-[48%] max-lg:flex-none lg:h-full"
+                : marketplaceOpen && sideRailTab === "procurar"
+                  ? "flex max-lg:h-full max-lg:flex-1 max-lg:rounded-none max-lg:shadow-none lg:h-full"
+                  : imovelTool === "explorar"
+                    ? "flex max-lg:h-[54%] max-lg:flex-none lg:h-full"
+                    : "flex max-lg:h-[60%] max-lg:flex-none lg:h-full"
               : "hidden"
           } lg:shrink-0 ${
             marketplaceOpen && appMode === "imovel" && sideRailTab === "procurar"
@@ -1083,8 +1200,12 @@ export default function App() {
               : "w-full lg:w-[340px] lg:max-w-[340px]"
           }`}
         >
-          {/* Alça mobile — só no painel (não no marketplace tela cheia) */}
-          {!(marketplaceOpen && sideRailTab === "procurar") && (
+          {/* Alça mobile — só no painel (não no marketplace tela cheia sem cards) */}
+          {!(
+            marketplaceOpen &&
+            sideRailTab === "procurar" &&
+            !pinCardOpen
+          ) && (
             <button
               type="button"
               onClick={closeSidePanel}
@@ -1120,7 +1241,7 @@ export default function App() {
           ) : appMode === "imovel" && sideRailTab === "inbox" ? (
             <SideRailPlaceholder
               title="Caixa de entrada"
-              body="Mensagens de corretores e alertas do Sino Mobile aparecem aqui."
+              body="Mensagens de corretores e alertas do Sino Analytics aparecem aqui."
             />
           ) : appMode === "imovel" &&
             marketplaceOpen &&
@@ -1134,20 +1255,19 @@ export default function App() {
                 flyTo(listing.lat, listing.lng, 14.2);
               }}
               onOpenDetail={(listing) => {
-                setSelectedListingId(listing.id);
-                setDetailListingId(listing.id);
-                flyTo(listing.lat, listing.lng, 14.2);
+                openListingDetail(listing);
               }}
               onClose={() => {
                 setMarketplaceOpen(false);
+                setMarketplaceRegionId(null);
                 setOpenMarketListingId(null);
                 setSelectedListingId(null);
                 setDetailListingId(null);
                 setSideRailTab("procurar");
-                // Mobile: volta ao mapa inicial; desktop: mantém o painel
                 if (
                   typeof window !== "undefined" &&
-                  !window.matchMedia("(min-width: 1024px)").matches
+                  !window.matchMedia("(min-width: 1024px)").matches &&
+                  !pinCardOpen
                 ) {
                   setPanelOpen(false);
                   setMobilePane("map");
@@ -1157,6 +1277,14 @@ export default function App() {
               quartos={filterQuartos}
               advancedFilters={advancedFilters}
               setAdvancedFilters={setAdvancedFilters}
+              regionFilterId={marketplaceRegionId}
+              regionFilterLabel={
+                marketplaceRegionId
+                  ? getRegionByIdSync(marketplaceRegionId)?.name ||
+                    nearbyCenterLabel
+                  : null
+              }
+              onClearRegionFilter={() => setMarketplaceRegionId(null)}
             />
           ) : appMode === "imovel" && sideRailTab === "favoritos" ? (
             <SideRailPlaceholder
@@ -1393,9 +1521,15 @@ export default function App() {
         return (
           <PropertyDetailOverlay
             listing={detail}
-            onClose={() => setDetailListingId(null)}
+            nearbyPlaces={nearbyPlaces}
+            nearbyLoading={nearbyLoading}
+            onClose={() => {
+              setDetailListingId(null);
+              setHoveredPoi(null);
+            }}
             onAskSino={() => {
               setDetailListingId(null);
+              setHoveredPoi(null);
               setImovelTool("explorar");
               setSideRailTab("procurar");
               setMobilePane("content");

@@ -1,8 +1,19 @@
+/**
+ * Locais próximos via OpenStreetMap / Overpass API (dados públicos).
+ *
+ * APIs para verificação:
+ * - Overpass (POIs): https://overpass-api.de/api/interpreter
+ * - Overpass Turbo (testar queries): https://overpass-turbo.eu/
+ * - Nominatim (geocode, já usado em buscas): https://nominatim.openstreetmap.org/
+ *
+ * Política de uso OSM: https://operations.osmfoundation.org/policies/overpass/
+ */
+
 export type NearbyCategory =
-  | "farmacia"
-  | "mercado"
   | "restaurante"
-  | "shopping";
+  | "hospital"
+  | "delegacia"
+  | "escola";
 
 export type NearbyPlace = {
   id: string;
@@ -19,27 +30,49 @@ export const NEARBY_CATEGORY_META: Record<
   NearbyCategory,
   {
     label: string;
-    symbol: string;
+    short: string;
     color: [number, number, number];
   }
 > = {
-  farmacia: { label: "Farmácias", symbol: "💊", color: [16, 185, 129] },
-  mercado: { label: "Mercados", symbol: "🛒", color: [245, 158, 11] },
-  restaurante: { label: "Restaurantes", symbol: "🍽️", color: [239, 68, 68] },
-  shopping: { label: "Shoppings", symbol: "🏬", color: [139, 92, 246] },
+  restaurante: {
+    label: "Restaurantes",
+    short: "Restaurante",
+    color: [226, 75, 75],
+  },
+  hospital: {
+    label: "Hospitais",
+    short: "Hospital",
+    color: [13, 159, 110],
+  },
+  delegacia: {
+    label: "Delegacias",
+    short: "Delegacia",
+    color: [37, 99, 235],
+  },
+  escola: {
+    label: "Escolas",
+    short: "Escola",
+    color: [234, 136, 20],
+  },
 };
 
 export const DEFAULT_NEARBY_FILTERS: NearbyFilters = {
-  farmacia: true,
-  mercado: true,
   restaurante: true,
-  shopping: true,
+  hospital: true,
+  delegacia: true,
+  escola: true,
 };
 
-/** Raio padrão e degraus para +/- no clique. */
-export const DEFAULT_NEARBY_RADIUS_M = 2000;
+export const DEFAULT_NEARBY_RADIUS_M = 1500;
 export const NEARBY_RADIUS_STEPS_M = [
   500, 1000, 1500, 2000, 3000, 4000, 5000,
+] as const;
+
+/** Endpoints públicos Overpass (espelhos). */
+export const OVERPASS_ENDPOINTS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass.openstreetmap.ru/api/interpreter",
 ] as const;
 
 export function formatRadiusLabel(m: number): string {
@@ -53,19 +86,14 @@ export function nextNearbyRadius(current: number, dir: 1 | -1): number {
   let idx = steps.findIndex((s) => s >= current);
   if (idx < 0) idx = steps.length - 1;
   if (steps[idx] !== current) {
-    // current entre dois degraus
     if (dir < 0) return steps[Math.max(0, idx - 1)];
     return steps[idx];
   }
   return steps[Math.min(steps.length - 1, Math.max(0, idx + dir))];
 }
 
-/** Overpass costuma ser lento/instável — não segurar a UI. */
-const OVERPASS_TIMEOUT_MS = 2800;
-const OVERPASS_ENDPOINTS = [
-  "https://overpass-api.de/api/interpreter",
-  "https://overpass.kumi.systems/api/interpreter",
-];
+/** Timeout generoso — Overpass público pode demorar. */
+const OVERPASS_TIMEOUT_MS = 10000;
 
 function haversineM(
   aLat: number,
@@ -84,7 +112,6 @@ function haversineM(
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-/** Polígono aproximado do raio (para desenhar no mapa). */
 export function radiusCirclePolygon(
   lat: number,
   lng: number,
@@ -122,7 +149,7 @@ function offsetPoint(
   };
 }
 
-/** Mock determinístico perto do clique (resposta imediata). */
+/** Fallback só se Overpass falhar (rede/timeout). */
 export function mockNearby(
   lat: number,
   lng: number,
@@ -135,34 +162,37 @@ export function mockNearby(
     dists: number[];
   }[] = [
     {
-      category: "farmacia",
-      names: ["Farmácia DrogaVida", "Drogasil Express", "Pague Menos", "Farmácia Popular"],
-      bearings: [20, 140, 250, 310],
-      dists: [420, 980, 1500, 2800],
-    },
-    {
-      category: "mercado",
-      names: ["Mercado Bom Preço", "Supermercado Extra", "Atacadão Local", "Hiper Bahia"],
-      bearings: [60, 180, 300, 15],
-      dists: [550, 1100, 1700, 3500],
-    },
-    {
       category: "restaurante",
       names: [
         "Restaurante Sabor Baiano",
         "Cantina da Praça",
         "Burger House",
         "Café da Esquina",
-        "Churrascaria Norte",
       ],
-      bearings: [40, 100, 210, 320, 160],
-      dists: [300, 700, 1200, 1850, 4200],
+      bearings: [40, 100, 210, 320],
+      dists: [300, 700, 1200, 1850],
     },
     {
-      category: "shopping",
-      names: ["Shopping Center Norte", "Galeria Comercial", "Outlet Salvador"],
-      bearings: [90, 270, 45],
-      dists: [900, 1600, 4500],
+      category: "hospital",
+      names: ["Hospital São Rafael", "UPA Regional", "Clínica Salvador"],
+      bearings: [15, 130, 255],
+      dists: [650, 1100, 1600],
+    },
+    {
+      category: "delegacia",
+      names: ["Delegacia da Região", "DP Comunitária"],
+      bearings: [75, 195],
+      dists: [800, 1400],
+    },
+    {
+      category: "escola",
+      names: [
+        "Escola Municipal Centro",
+        "Colégio Bahia",
+        "Instituto Educacional",
+      ],
+      bearings: [55, 170, 230],
+      dists: [400, 950, 1350],
     },
   ];
 
@@ -186,23 +216,33 @@ export function mockNearby(
 }
 
 function mapOsmToCategory(tags: Record<string, string>): NearbyCategory | null {
-  if (tags.amenity === "pharmacy") return "farmacia";
-  if (tags.shop === "supermarket" || tags.shop === "convenience")
-    return "mercado";
   if (
     tags.amenity === "restaurant" ||
     tags.amenity === "fast_food" ||
     tags.amenity === "cafe"
   )
     return "restaurante";
-  if (tags.shop === "mall" || tags.shop === "department_store")
-    return "shopping";
+  if (
+    tags.amenity === "hospital" ||
+    tags.amenity === "clinic" ||
+    tags.amenity === "doctors"
+  )
+    return "hospital";
+  if (tags.amenity === "police") return "delegacia";
+  if (
+    tags.amenity === "school" ||
+    tags.amenity === "kindergarten" ||
+    tags.amenity === "college" ||
+    tags.amenity === "university"
+  )
+    return "escola";
   return null;
 }
 
 function parseOverpassElements(
   elements: {
     id: number;
+    type?: string;
     lat?: number;
     lon?: number;
     center?: { lat: number; lon: number };
@@ -213,6 +253,8 @@ function parseOverpassElements(
   radiusM: number,
 ): NearbyPlace[] {
   const places: NearbyPlace[] = [];
+  const seen = new Set<string>();
+
   for (const el of elements) {
     const tags = el.tags || {};
     const category = mapOsmToCategory(tags);
@@ -220,19 +262,58 @@ function parseOverpassElements(
     const plat = el.lat ?? el.center?.lat;
     const plng = el.lon ?? el.center?.lon;
     if (plat == null || plng == null) continue;
+
+    const name = (tags.name || tags["name:pt"] || "").trim();
+    // Preferir locais com nome real (dados verificáveis no OSM)
+    if (!name) continue;
+
+    const id = `osm-${el.type || "n"}-${el.id}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+
+    const distanceM = Math.round(haversineM(lat, lng, plat, plng));
+    if (distanceM > radiusM) continue;
+
     places.push({
-      id: `osm-${el.id}`,
-      name: tags.name || NEARBY_CATEGORY_META[category].label,
+      id,
+      name,
       category,
       lat: plat,
       lng: plng,
-      distanceM: Math.round(haversineM(lat, lng, plat, plng)),
+      distanceM,
     });
   }
-  return places
-    .filter((p) => p.distanceM <= radiusM)
-    .sort((a, b) => a.distanceM - b.distanceM)
-    .slice(0, 40);
+
+  // Limitar por categoria para não poluir o mapa
+  const perCat = new Map<NearbyCategory, number>();
+  const capped: NearbyPlace[] = [];
+  for (const p of places.sort((a, b) => a.distanceM - b.distanceM)) {
+    const n = perCat.get(p.category) ?? 0;
+    if (n >= 8) continue;
+    perCat.set(p.category, n + 1);
+    capped.push(p);
+  }
+  return capped;
+}
+
+function buildOverpassQuery(lat: number, lng: number, radiusM: number) {
+  // nwr = node + way + relation (hospitais/escolas muitas vezes são ways)
+  return `
+[out:json][timeout:25];
+(
+  nwr["amenity"="restaurant"](around:${radiusM},${lat},${lng});
+  nwr["amenity"="fast_food"](around:${radiusM},${lat},${lng});
+  nwr["amenity"="cafe"](around:${radiusM},${lat},${lng});
+  nwr["amenity"="hospital"](around:${radiusM},${lat},${lng});
+  nwr["amenity"="clinic"](around:${radiusM},${lat},${lng});
+  nwr["amenity"="police"](around:${radiusM},${lat},${lng});
+  nwr["amenity"="school"](around:${radiusM},${lat},${lng});
+  nwr["amenity"="kindergarten"](around:${radiusM},${lat},${lng});
+  nwr["amenity"="college"](around:${radiusM},${lat},${lng});
+  nwr["amenity"="university"](around:${radiusM},${lat},${lng});
+);
+out center 80;
+`;
 }
 
 async function fetchOverpass(
@@ -241,19 +322,7 @@ async function fetchOverpass(
   radiusM: number,
   signal?: AbortSignal,
 ): Promise<NearbyPlace[] | null> {
-  const query = `
-[out:json][timeout:8];
-(
-  node["amenity"="pharmacy"](around:${radiusM},${lat},${lng});
-  node["shop"="supermarket"](around:${radiusM},${lat},${lng});
-  node["shop"="convenience"](around:${radiusM},${lat},${lng});
-  node["amenity"="restaurant"](around:${radiusM},${lat},${lng});
-  node["amenity"="fast_food"](around:${radiusM},${lat},${lng});
-  node["shop"="mall"](around:${radiusM},${lat},${lng});
-);
-out body 30;
-`;
-
+  const query = buildOverpassQuery(lat, lng, radiusM);
   const body = `data=${encodeURIComponent(query)}`;
 
   for (const endpoint of OVERPASS_ENDPOINTS) {
@@ -262,13 +331,17 @@ out body 30;
       const res = await fetch(endpoint, {
         method: "POST",
         body,
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+          Accept: "application/json",
+        },
         signal,
       });
       if (!res.ok) continue;
       const data = await res.json();
       const elements = (data?.elements || []) as {
         id: number;
+        type?: string;
         lat?: number;
         lon?: number;
         center?: { lat: number; lon: number };
@@ -285,8 +358,8 @@ out body 30;
 }
 
 /**
- * Instantâneo com mock; tenta OSM em paralelo com timeout curto.
- * onInstant: chamado na hora com estimativa (para UI responsiva).
+ * Busca POIs reais no OpenStreetMap via Overpass.
+ * Fallback mock só se todos os espelhos falharem.
  */
 export async function fetchNearbyAmenities(
   lat: number,
@@ -294,12 +367,11 @@ export async function fetchNearbyAmenities(
   options?: {
     signal?: AbortSignal;
     radiusM?: number;
+    /** Chamado quando OSM responde (ou no fallback). */
     onInstant?: (places: NearbyPlace[]) => void;
   },
 ): Promise<{ places: NearbyPlace[]; source: "osm" | "mock" }> {
   const radiusM = options?.radiusM ?? DEFAULT_NEARBY_RADIUS_M;
-  const instant = mockNearby(lat, lng, radiusM);
-  options?.onInstant?.(instant);
 
   const controller = new AbortController();
   const onAbort = () => controller.abort();
@@ -309,7 +381,10 @@ export async function fetchNearbyAmenities(
 
   try {
     const osm = await fetchOverpass(lat, lng, radiusM, controller.signal);
-    if (osm && osm.length > 0) return { places: osm, source: "osm" };
+    if (osm && osm.length > 0) {
+      options?.onInstant?.(osm);
+      return { places: osm, source: "osm" };
+    }
   } catch {
     // timeout / abort
   } finally {
@@ -317,10 +392,17 @@ export async function fetchNearbyAmenities(
     options?.signal?.removeEventListener("abort", onAbort);
   }
 
-  return { places: instant, source: "mock" };
+  const fallback = mockNearby(lat, lng, radiusM);
+  options?.onInstant?.(fallback);
+  return { places: fallback, source: "mock" };
 }
 
 export function formatDistance(m: number): string {
   if (m < 1000) return `${m} m`;
   return `${(m / 1000).toFixed(1)} km`;
+}
+
+/** Query pronta para colar no Overpass Turbo e validar um ponto. */
+export function overpassTurboHint(lat: number, lng: number, radiusM = 1500) {
+  return buildOverpassQuery(lat, lng, radiusM).trim();
 }

@@ -166,26 +166,26 @@ export default function ViewFrequentPlaces({
   };
 
   return (
-    <div className="animate-fade-in space-y-4 p-4">
+    <div className="animate-fade-in space-y-2.5 p-3">
       <div>
-        <h2 className="text-xl font-bold text-[#2a2a33]">
+        <h2 className="text-base font-bold text-[#2a2a33]">
           Tempo de deslocamento
         </h2>
-        <p className="mt-1 text-sm text-[#6a6a72]">
-          Digite a origem e os destinos do dia a dia. Também pode marcar a
-          origem clicando no mapa — veja o caminho e o tempo aproximado.
+        <p className="mt-0.5 text-[11px] leading-snug text-[#6a6a72]">
+          Origem e destinos do dia a dia — ou clique no mapa para marcar a
+          origem.
         </p>
       </div>
 
-      <div className="rounded-xl border border-[#d1d1d5] bg-[#e8f1ff]/50 p-3">
+      <div className="rounded-lg border border-[#d1d1d5] bg-[#e8f1ff]/40 p-2">
         <label
           htmlFor="route-origin"
-          className="block text-xs font-bold uppercase tracking-wide text-[#6a6a72]"
+          className="block text-[10px] font-bold uppercase tracking-wide text-[#6a6a72]"
         >
           Origem no mapa
         </label>
-        <div className="relative mt-1.5">
-          <div className="flex gap-2">
+        <div className="relative mt-1">
+          <div className="flex gap-1.5">
             <input
               id="route-origin"
               value={originDraft}
@@ -204,27 +204,26 @@ export default function ViewFrequentPlaces({
                   void applyOriginFromText();
                 }
               }}
-              placeholder="Ex.: Pituba, Av. Oceânica, Imbuí..."
+              placeholder="Ex.: Pituba, Av. Oceânica…"
               autoComplete="off"
               disabled={originBusy}
-              className="min-w-0 flex-1 rounded-lg border border-[#c3c3c8] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#006aff] focus:ring-2 focus:ring-[#006aff]/20 disabled:opacity-60"
+              className="min-w-0 flex-1 rounded-md border border-[#c3c3c8] bg-white px-2.5 py-1.5 text-sm outline-none focus:border-[#006aff] focus:ring-2 focus:ring-[#006aff]/20 disabled:opacity-60"
             />
             <button
               type="button"
               onClick={() => void applyOriginFromText()}
               disabled={originBusy}
-              className="shrink-0 rounded-full bg-[#006aff] px-4 py-2 text-sm font-bold text-white hover:bg-[#0058d6] disabled:opacity-60"
+              className="shrink-0 rounded-full bg-[#006aff] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#0058d6] disabled:opacity-60"
             >
-              {originBusy ? "..." : "Definir"}
+              {originBusy ? "…" : "Definir"}
             </button>
           </div>
 
           {originOpen && originDraft.trim().length >= 2 && (
-            <ul className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-[#d1d1d5] bg-white py-1 shadow-lg">
+            <ul className="absolute z-20 mt-1 max-h-40 w-full overflow-y-auto rounded-lg border border-[#d1d1d5] bg-white py-1 shadow-lg">
               {originSuggestions.length === 0 ? (
-                <li className="px-3 py-2.5 text-xs text-[#6a6a72]">
-                  Sem resultado no banco. Pressione Definir para buscar, ou
-                  clique no mapa.
+                <li className="px-3 py-2 text-[11px] text-[#6a6a72]">
+                  Sem resultado. Pressione Definir ou clique no mapa.
                 </li>
               ) : (
                 originSuggestions.map((s) => (
@@ -233,15 +232,15 @@ export default function ViewFrequentPlaces({
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => applyOriginFromSuggestion(s)}
-                      className="flex w-full flex-col px-3 py-2 text-left hover:bg-[#e8f1ff]"
+                      className="flex w-full flex-col px-3 py-1.5 text-left hover:bg-[#e8f1ff]"
                     >
                       <span className="text-sm font-semibold text-[#2a2a33]">
                         {s.kind === "rua" ? s.street : s.neighborhoodName}
                       </span>
-                      <span className="text-[11px] text-[#6a6a72]">
+                      <span className="text-[10px] text-[#6a6a72]">
                         {s.kind === "rua"
                           ? `Endereço · ${s.neighborhoodName}`
-                          : "Bairro · banco ConverGeo"}
+                          : "Bairro"}
                       </span>
                     </button>
                   </li>
@@ -250,26 +249,21 @@ export default function ViewFrequentPlaces({
             </ul>
           )}
         </div>
-        {origin ? (
-          <p className="mt-2 text-xs font-semibold text-[#006aff]">
-            Atual: {originLabel || "Ponto selecionado"} ·{" "}
-            {origin.lat.toFixed(4)}, {origin.lng.toFixed(4)}
-          </p>
-        ) : (
-          <p className="mt-2 text-xs text-[#6a6a72]">
-            Ou clique em qualquer ponto do mapa para definir a origem.
-          </p>
-        )}
+        <p className="mt-1 text-[10px] text-[#6a6a72]">
+          {origin
+            ? `Atual: ${originLabel || "Ponto selecionado"}`
+            : "Ou toque no mapa para definir a origem."}
+        </p>
       </div>
 
-      <div className="rounded-xl border border-[#d1d1d5] bg-white p-3">
+      <div className="rounded-lg border border-[#d1d1d5] bg-white p-2">
         <label
           htmlFor="frequent-place"
-          className="block text-xs font-bold uppercase tracking-wide text-[#6a6a72]"
+          className="block text-[10px] font-bold uppercase tracking-wide text-[#6a6a72]"
         >
-          Digite os lugares que você mais frequenta
+          Lugares que você frequenta
         </label>
-        <div className="mt-1.5 flex gap-2">
+        <div className="mt-1 flex gap-1.5">
           <input
             id="frequent-place"
             value={draft}
@@ -280,24 +274,24 @@ export default function ViewFrequentPlaces({
                 void addPlace();
               }
             }}
-            placeholder="Ex.: Shopping da Bahia, trabalho, praia..."
-            className="min-w-0 flex-1 rounded-lg border border-[#c3c3c8] px-3 py-2.5 text-sm outline-none focus:border-[#006aff] focus:ring-2 focus:ring-[#006aff]/20"
+            placeholder="Ex.: Shopping da Bahia…"
+            className="min-w-0 flex-1 rounded-md border border-[#c3c3c8] px-2.5 py-1.5 text-sm outline-none focus:border-[#006aff] focus:ring-2 focus:ring-[#006aff]/20"
           />
           <button
             type="button"
             onClick={() => void addPlace()}
-            className="shrink-0 rounded-full bg-[#006aff] px-4 py-2 text-sm font-bold text-white hover:bg-[#0058d6]"
+            className="shrink-0 rounded-full bg-[#006aff] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#0058d6]"
           >
-            Adicionar
+            Add
           </button>
         </div>
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="mt-1.5 flex flex-wrap gap-1">
           {SUGGESTIONS.map((s) => (
             <button
               key={s}
               type="button"
               onClick={() => void addPlace(s)}
-              className="rounded-full border border-[#c3c3c8] px-2.5 py-1 text-[11px] font-semibold text-[#2a2a33] hover:border-[#006aff] hover:bg-[#e8f1ff]"
+              className="rounded-full border border-[#c3c3c8] px-2 py-0.5 text-[10px] font-semibold text-[#2a2a33] hover:border-[#006aff] hover:bg-[#e8f1ff]"
             >
               {s}
             </button>
@@ -306,15 +300,15 @@ export default function ViewFrequentPlaces({
       </div>
 
       {places.length > 0 && (
-        <ul className="space-y-2">
+        <ul className="space-y-1">
           {places.map((p, i) => (
             <li
               key={p.id}
-              className="flex items-center justify-between rounded-xl border border-[#d1d1d5] bg-white px-3 py-2.5"
+              className="flex items-center justify-between rounded-lg border border-[#d1d1d5] bg-white px-2.5 py-1.5"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 items-center gap-2">
                 <span
-                  className="h-2.5 w-2.5 rounded-full"
+                  className="h-2 w-2 shrink-0 rounded-full"
                   style={{
                     backgroundColor: [
                       "#006aff",
@@ -326,14 +320,14 @@ export default function ViewFrequentPlaces({
                     ][i % 6],
                   }}
                 />
-                <span className="text-sm font-semibold text-[#2a2a33]">
+                <span className="truncate text-xs font-semibold text-[#2a2a33]">
                   {p.label}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => removePlace(p.id)}
-                className="text-xs font-bold text-[#6a6a72] hover:text-rose-600"
+                className="shrink-0 text-[10px] font-bold text-[#6a6a72] hover:text-rose-600"
               >
                 Remover
               </button>
@@ -342,52 +336,50 @@ export default function ViewFrequentPlaces({
         </ul>
       )}
 
-      {error && <p className="text-xs font-semibold text-rose-600">{error}</p>}
+      {error && <p className="text-[11px] font-semibold text-rose-600">{error}</p>}
 
       <button
         type="button"
         onClick={() => void calculate()}
         disabled={loading}
-        className="w-full rounded-full bg-[#006aff] py-3.5 text-sm font-bold text-white hover:bg-[#0058d6] disabled:opacity-60"
+        className="w-full rounded-full bg-[#006aff] py-2.5 text-sm font-bold text-white hover:bg-[#0058d6] disabled:opacity-60"
       >
-        {loading ? "Calculando caminhos..." : "Calcular caminhos e tempos"}
+        {loading ? "Calculando…" : "Calcular caminhos e tempos"}
       </button>
 
       {routes.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-bold uppercase tracking-wide text-[#6a6a72]">
-            Tempos aproximados de chegada
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[#6a6a72]">
+            Tempos aproximados
           </p>
           {routes.map((r) => (
             <div
               key={r.placeId}
-              className="rounded-xl border border-[#d1d1d5] bg-white p-3 shadow-sm"
+              className="rounded-lg border border-[#d1d1d5] bg-white px-2.5 py-2"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
                   <span
-                    className="mt-0.5 h-3 w-3 shrink-0 rounded-full"
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{
                       backgroundColor: `rgb(${r.color.join(",")})`,
                     }}
                   />
-                  <div>
-                    <p className="text-sm font-bold text-[#2a2a33]">{r.label}</p>
-                    <p className="text-xs text-[#6a6a72]">
-                      {r.distanceKm} km · de carro (aprox.)
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold text-[#2a2a33]">
+                      {r.label}
+                    </p>
+                    <p className="text-[10px] text-[#6a6a72]">
+                      {r.distanceKm} km · carro
                     </p>
                   </div>
                 </div>
-                <p className="text-lg font-black tabular-nums text-[#006aff]">
+                <p className="shrink-0 text-base font-black tabular-nums text-[#006aff]">
                   {formatDuration(r.durationMin)}
                 </p>
               </div>
             </div>
           ))}
-          <p className="text-[11px] leading-snug text-[#6a6a72]">
-            Tempos estimados em condições médias de trânsito. Os caminhos
-            aparecem coloridos no mapa.
-          </p>
         </div>
       )}
     </div>

@@ -1,19 +1,18 @@
-# ConverGeo Web — v1.1.0
+# ConverGeo Web — v1.1.0+
 
 ## Release
-- **Versão:** 1.1.0
-- **Data:** 2026-08-10
-- **Dados:** fictícios / mock locais (Salvador)
-- **Plataformas:** Web responsiva + PWA (Android / iPhone)
+- **Versão:** 1.1.0 (base) + UX mapa/marketplace
+- **Dados:** mocks Salvador + POIs reais via OpenStreetMap (Overpass)
+- **Plataformas:** Web responsiva + PWA
 
-## O que mudou (1.1.0)
-- Mobile: mapa em 1º acesso + botão Menu; painel em folha inferior
-- Marketplace em tela cheia no celular com “Voltar ao mapa”
-- Barra: Para você / Tempo / Regiões / Comparar + Filtro (sem Buscar no mobile)
-- Modo claro / noturno no mapa (web e mobile)
-- Botões Marketplace, Menu e Voltar ao mapa mais compactos
-- Header desktop: busca central, Ajuda e Entrar à direita
-- Ranking de oportunidades em menu suspenso (Sino Mobile)
+## O que mudou (sessão recente)
+- Busca na barra de filtros + placeholder animado “Busque um endereço”
+- Clique no mapa: card “À venda por aqui” (3 imóveis) + dados do bairro
+- Marketplace filtrado por bairro (“Ver todos na região”)
+- POIs com ícones: restaurantes, hospitais, delegacias, escolas (Overpass)
+- Tooltip do POI à direita (sem botão Legenda)
+- Sino Analytics (renome) + UI de Regiões/Tempo compactas
+- Mapa: pan/zoom mobile e `touch-action: none`
 
 ## Produção
 - Source maps do browser desabilitados
@@ -21,5 +20,7 @@
 - Headers de segurança básicos
 - Manifest PWA + service worker em `/sw.js`
 
-## Nota de segurança
-Código que roda no navegador **não pode ser 100% ocultado**. Minificação e ausência de source maps dificultam a leitura, mas não impedem inspeção avançada. Segredos e lógica sensível devem ficar no backend.
+## APIs públicas
+- Overpass: https://overpass-api.de/api/interpreter
+- Overpass Turbo: https://overpass-turbo.eu/
+- Nominatim: https://nominatim.openstreetmap.org/

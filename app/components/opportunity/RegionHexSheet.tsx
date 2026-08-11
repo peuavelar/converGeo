@@ -1,31 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { NEIGHBORHOODS, METRIC_LABELS } from "../../data/neighborhoods";
 import { getRegionById } from "../../services/regionsApi";
 import type { RegionDetail } from "../../types/region";
 import { formatPct, scoreCss, bandLabel } from "../../utils/opportunity";
 import DualScore from "./DualScore";
-import {
-  NEARBY_CATEGORY_META,
-  formatDistance,
-  formatRadiusLabel,
-  NEARBY_RADIUS_STEPS_M,
-  type NearbyCategory,
-  type NearbyFilters,
-  type NearbyPlace,
-} from "../../services/nearbyPlaces";
 
 type Props = {
   regionId: string | null;
   onClose: () => void;
   onOpenFull?: (id: string) => void;
-  nearbyPlaces: NearbyPlace[];
-  nearbyLoading: boolean;
-  nearbyFilters: NearbyFilters;
-  setNearbyFilters: (f: NearbyFilters) => void;
-  nearbySource: "osm" | "mock" | null;
-  nearbyRadiusM: number;
-  onNearbyRadiusChange: (dir: 1 | -1) => void;
 };
 
 function formatBRL(n: number) {
@@ -36,24 +21,102 @@ function formatBRL(n: number) {
   }).format(n);
 }
 
-/** Ficha da região selecionada + serviços próximos (2 km). */
+function levelFrom10(v: number): { label: string; tone: string } {
+  if (v >= 8) return { label: "Excelente", tone: "text-[#1a7f37]" };
+  if (v >= 6.5) return { label: "Bom", tone: "text-[#006aff]" };
+  if (v >= 5) return { label: "Regular", tone: "text-[#b45309]" };
+  return { label: "Atenção", tone: "text-[#b91c1c]" };
+}
+
+function MetricGlyph({
+  kind,
+}: {
+  kind: "transporte" | "educacao" | "consumo" | "seguranca" | "risco";
+}) {
+  const common = {
+    viewBox: "0 0 24 24",
+    className: "h-4 w-4",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true as const,
+  };
+  if (kind === "transporte") {
+    return (
+      <svg {...common}>
+        <rect x="4" y="5" width="16" height="12" rx="2" />
+        <path d="M8 17v2M16 17v2M4 11h16" />
+      </svg>
+    );
+  }
+  if (kind === "educacao") {
+    return (
+      <svg {...common}>
+        <path d="M3 9l9-5 9 5-9 5-9-5z" />
+        <path d="M7 11.5V16c0 1.5 2.2 3 5 3s5-1.5 5-3v-4.5" />
+      </svg>
+    );
+  }
+  if (kind === "consumo") {
+    return (
+      <svg {...common}>
+        <path d="M4 8h16l-1.5 11H5.5L4 8z" />
+        <path d="M8 8V6a4 4 0 0 1 8 0v2" />
+      </svg>
+    );
+  }
+  if (kind === "seguranca") {
+    return (
+      <svg {...common}>
+        <path d="M12 3l8 4v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V7l8-4z" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...common}>
+      <path d="M12 9v4M12 17h.01" />
+      <path d="M10.3 4.3 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z" />
+    </svg>
+  );
+}
+
+const BAIRRO_METRICS = [
+  {
+    key: "transporte" as const,
+    glyph: "transporte" as const,
+    hint: "Acesso a ônibus, vias e mobilidade",
+  },
+  {
+    key: "educacao" as const,
+    glyph: "educacao" as const,
+    hint: "Escolas e instituições próximas",
+  },
+  {
+    key: "consumo" as const,
+    glyph: "consumo" as const,
+    hint: "Comércio, serviços e conveniência",
+  },
+  {
+    key: "seguranca" as const,
+    glyph: "seguranca" as const,
+    hint: "Percepção de segurança na região",
+  },
+];
+
+/** Ficha da região — scores + dados do bairro (sem lista de imóveis). */
 export default function RegionHexSheet({
   regionId,
   onClose,
   onOpenFull,
-  nearbyPlaces,
-  nearbyLoading,
-  nearbyFilters,
-  setNearbyFilters,
-  nearbySource,
-  nearbyRadiusM,
-  onNearbyRadiusChange,
 }: Props) {
   const [region, setRegion] = useState<RegionDetail | null>(null);
 
-  const canShrink = nearbyRadiusM > NEARBY_RADIUS_STEPS_M[0];
-  const canGrow =
-    nearbyRadiusM < NEARBY_RADIUS_STEPS_M[NEARBY_RADIUS_STEPS_M.length - 1];
+  const neighborhood = useMemo(
+    () => NEIGHBORHOODS.find((n) => n.id === regionId) ?? null,
+    [regionId],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -71,18 +134,18 @@ export default function RegionHexSheet({
 
   if (!regionId || !region) return null;
 
-  const visible = nearbyPlaces.filter((p) => nearbyFilters[p.category]);
+  const metrics = neighborhood?.metrics;
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-20 flex max-h-[min(72dvh,560px)] w-full flex-col overflow-hidden rounded-t-2xl border border-[#d1d1d5] border-b-0 bg-white shadow-2xl animate-fade-in sm:inset-x-auto sm:bottom-4 sm:left-4 sm:max-h-[min(78vh,560px)] sm:w-[min(100%-2rem,380px)] sm:rounded-xl sm:border-b">
-      <div className="flex shrink-0 items-start justify-between gap-2 border-b border-[#e8e8ed] px-3.5 py-3">
+    <div className="absolute inset-x-0 bottom-0 z-20 flex max-h-[min(68dvh,520px)] w-full flex-col overflow-hidden rounded-t-2xl border border-[#d1d1d5] border-b-0 bg-white shadow-2xl animate-fade-in sm:inset-x-auto sm:bottom-4 sm:left-4 sm:max-h-[min(74vh,520px)] sm:w-[min(100%-2rem,380px)] sm:rounded-xl sm:border-b">
+      <div className="flex shrink-0 items-start justify-between gap-2 border-b border-[#e8e8ed] px-3 py-2.5">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[#6a6a72]">
-            Região selecionada
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[#006aff]">
+            Oportunidades · bairro
           </p>
-          <h3 className="text-lg font-bold text-[#2a2a33]">{region.name}</h3>
+          <h3 className="text-base font-bold text-[#2a2a33]">{region.name}</h3>
           <p
-            className="text-xs font-semibold"
+            className="text-[11px] font-semibold"
             style={{ color: scoreCss(region.score) }}
           >
             {bandLabel(region.band)}
@@ -98,7 +161,7 @@ export default function RegionHexSheet({
         </button>
       </div>
 
-      <div className="space-y-3 overflow-y-auto p-3.5 custom-scrollbar">
+      <div className="space-y-2.5 overflow-y-auto p-3 custom-scrollbar">
         <DualScore
           opportunityScore={region.score}
           matchScore={Math.round(
@@ -106,136 +169,171 @@ export default function RegionHexSheet({
           )}
         />
 
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="rounded-lg bg-[#f5f5f7] p-2">
-            <p className="text-[#6a6a72]">Preço/m²</p>
+        <div className="grid grid-cols-3 gap-1.5 text-[11px]">
+          <div className="rounded-lg bg-[#f5f5f7] p-1.5">
+            <p className="text-[10px] text-[#6a6a72]">Preço/m²</p>
             <p className="font-bold text-[#2a2a33]">
               {formatBRL(region.precoM2)}
             </p>
           </div>
-          <div className="rounded-lg bg-[#f5f5f7] p-2">
-            <p className="text-[#6a6a72]">Valorização</p>
+          <div className="rounded-lg bg-[#f5f5f7] p-1.5">
+            <p className="text-[10px] text-[#6a6a72]">Valorização</p>
             <p className="font-bold text-[#1a7f37]">
               {formatPct(region.valorizacao12m)}
             </p>
           </div>
-          <div className="rounded-lg bg-[#f5f5f7] p-2">
-            <p className="text-[#6a6a72]">Lançamentos</p>
-            <p className="font-bold text-[#2a2a33]">
-              {region.novosEmpreendimentos}
-            </p>
-          </div>
-          <div className="rounded-lg bg-[#f5f5f7] p-2">
-            <p className="text-[#6a6a72]">Oferta</p>
+          <div className="rounded-lg bg-[#f5f5f7] p-1.5">
+            <p className="text-[10px] text-[#6a6a72]">Oferta</p>
             <p className="font-bold text-[#2a2a33]">{region.oferta}</p>
           </div>
         </div>
 
-        <p className="text-[11px] leading-snug text-[#6a6a72]">
-          {region.summary}
-        </p>
+        <div>
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-[#6a6a72]">
+            Dados do bairro
+          </p>
+          <p className="mb-2 text-[11px] leading-snug text-[#6a6a72]">
+            Qualidade de vida na região. Imóveis à venda ficam no card do mapa e
+            no marketplace.
+          </p>
 
-        {/* Perto — integrado */}
-        <div className="rounded-xl border border-[#d1d1d5] bg-[#f8fafc] p-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-[#2a2a33]">
-                Perto do ponto · raio {formatRadiusLabel(nearbyRadiusM)}
-              </p>
-              <p className="mt-0.5 text-[10px] text-[#6a6a72]">
-                Farmácias, mercados, restaurantes e shoppings no mapa
-                {nearbyLoading
-                  ? " · atualizando…"
-                  : nearbySource === "mock"
-                    ? " (estimativa)"
-                    : nearbySource === "osm"
-                      ? " (OpenStreetMap)"
-                      : ""}
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-1 rounded-full border border-[#c3c3c8] bg-white p-0.5">
-              <button
-                type="button"
-                onClick={() => onNearbyRadiusChange(-1)}
-                disabled={!canShrink || nearbyLoading}
-                className="flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold text-[#2a2a33] hover:bg-[#e8f1ff] hover:text-[#006aff] disabled:opacity-40"
-                aria-label="Diminuir raio"
-                title="Diminuir raio"
-              >
-                −
-              </button>
-              <span className="min-w-[3.25rem] text-center text-[11px] font-bold tabular-nums text-[#006aff]">
-                {formatRadiusLabel(nearbyRadiusM)}
-              </span>
-              <button
-                type="button"
-                onClick={() => onNearbyRadiusChange(1)}
-                disabled={!canGrow || nearbyLoading}
-                className="flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold text-[#2a2a33] hover:bg-[#e8f1ff] hover:text-[#006aff] disabled:opacity-40"
-                aria-label="Aumentar raio"
-                title="Aumentar raio"
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {(Object.keys(NEARBY_CATEGORY_META) as NearbyCategory[]).map(
-              (key) => {
-                const meta = NEARBY_CATEGORY_META[key];
-                const count = nearbyPlaces.filter(
-                  (p) => p.category === key,
-                ).length;
-                const on = nearbyFilters[key];
+          {metrics ? (
+            <ul className="space-y-1.5">
+              {BAIRRO_METRICS.map(({ key, glyph, hint }) => {
+                const raw = metrics[key];
+                const pct = Math.round((raw / 10) * 100);
+                const level = levelFrom10(raw);
                 return (
-                  <button
+                  <li
                     key={key}
-                    type="button"
-                    onClick={() =>
-                      setNearbyFilters({ ...nearbyFilters, [key]: !on })
-                    }
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                      on
-                        ? "border-[#006aff] bg-[#e8f1ff] text-[#006aff]"
-                        : "border-[#c3c3c8] bg-white text-[#6a6a72]"
-                    }`}
+                    className="rounded-xl border border-[#e8e8ed] bg-[#f8fafc] px-2.5 py-2"
                   >
-                    {meta.symbol} {meta.label} ({count})
-                  </button>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#006aff] shadow-sm ring-1 ring-[#e8e8ed]">
+                          <MetricGlyph kind={glyph} />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-[#2a2a33]">
+                            {METRIC_LABELS[key]}
+                          </p>
+                          <p className="truncate text-[10px] text-[#6a6a72]">
+                            {hint}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-sm font-bold tabular-nums text-[#2a2a33]">
+                          {raw.toFixed(1)}
+                        </p>
+                        <p className={`text-[10px] font-semibold ${level.tone}`}>
+                          {level.label}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#e8e8ed]">
+                      <div
+                        className="h-full rounded-full bg-[#006aff] transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </li>
                 );
-              },
-            )}
-          </div>
+              })}
 
-          <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto">
-            {visible.slice(0, 12).map((p) => (
-              <li
-                key={p.id}
-                className="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-1.5 text-xs"
-              >
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <span aria-hidden>
-                    {NEARBY_CATEGORY_META[p.category].symbol}
-                  </span>
-                  <span className="truncate font-semibold text-[#2a2a33]">
-                    {p.name}
-                  </span>
-                </span>
-                <span className="shrink-0 font-bold text-[#006aff]">
-                  {formatDistance(p.distanceM)}
-                </span>
+              <li className="rounded-xl border border-[#e8e8ed] bg-white px-2.5 py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#fff5f5] text-[#b91c1c] ring-1 ring-[#fecaca]">
+                      <MetricGlyph kind="risco" />
+                    </span>
+                    <div>
+                      <p className="text-xs font-bold text-[#2a2a33]">
+                        Roubo / furto
+                      </p>
+                      <p className="text-[10px] text-[#6a6a72]">
+                        Índice relativo (menor = melhor)
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm font-bold tabular-nums text-[#2a2a33]">
+                    {metrics.rouboFurto.toFixed(1)}
+                  </p>
+                </div>
               </li>
-            ))}
-            {!visible.length && (
-              <li className="py-2 text-center text-[#6a6a72]">
-                {nearbyLoading
-                  ? "Carregando lugares próximos…"
-                  : "Nenhum lugar com os filtros atuais."}
-              </li>
-            )}
-          </ul>
+            </ul>
+          ) : (
+            <div className="space-y-1.5">
+              {(
+                [
+                  {
+                    id: "infraestrutura" as const,
+                    label: "Infraestrutura",
+                    hint: "Transporte, serviços e urbanização",
+                  },
+                  {
+                    id: "demografia" as const,
+                    label: "Demografia",
+                    hint: "Perfil e dinamismo populacional",
+                  },
+                  {
+                    id: "desenvolvimento" as const,
+                    label: "Desenvolvimento",
+                    hint: "Empreendimentos e crescimento",
+                  },
+                  {
+                    id: "mercado" as const,
+                    label: "Mercado",
+                    hint: "Liquidez e oferta imobiliária",
+                  },
+                ] as const
+              ).map((row) => {
+                const value = region.breakdown[row.id];
+                return (
+                  <div
+                    key={row.id}
+                    className="rounded-xl border border-[#e8e8ed] bg-[#f8fafc] px-2.5 py-2"
+                  >
+                    <div className="mb-1 flex justify-between text-xs">
+                      <div>
+                        <p className="font-bold text-[#2a2a33]">{row.label}</p>
+                        <p className="text-[10px] text-[#6a6a72]">{row.hint}</p>
+                      </div>
+                      <span className="font-bold tabular-nums text-[#2a2a33]">
+                        {value}
+                      </span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-[#e8e8ed]">
+                      <div
+                        className="h-full rounded-full bg-[#006aff]"
+                        style={{ width: `${value}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {region.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {region.tags.map((t) => (
+                <span
+                  key={t}
+                  className="rounded-full bg-[#e8f1ff] px-2 py-0.5 text-[10px] font-semibold text-[#006aff]"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
+
+        {region.summary && (
+          <p className="rounded-lg border border-[#eef1f6] bg-white px-2.5 py-2 text-[11px] leading-snug text-[#6a6a72]">
+            {region.summary}
+          </p>
+        )}
 
         <button
           type="button"

@@ -68,7 +68,7 @@ export default function MapControls({
 
       <button
         type="button"
-        onClick={() => setCurrentStyle(isDark ? "positron" : "dark")}
+        onClick={() => setCurrentStyle(isDark ? "voyager" : "dark")}
         className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10px] font-bold shadow-md transition sm:px-3 sm:text-[11px] ${
           isDark
             ? "border-[#1a2a44] bg-[#0a1220] text-white"

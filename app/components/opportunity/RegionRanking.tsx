@@ -117,7 +117,7 @@ export default function RegionRanking({
           })}
         </ol>
         <p className="border-t border-[#eef0f3] bg-[#f8f9fb] px-3 py-2 text-[11px] leading-snug text-[#6a6a72]">
-          Peça detalhes ao <strong className="text-[#006aff]">Sino Mobile</strong>{" "}
+          Peça detalhes ao <strong className="text-[#006aff]">Sino Analytics</strong>{" "}
           (ex.: “me fala da Paralela” ou “compare Imbuí e Pituba”).
         </p>
       </div>

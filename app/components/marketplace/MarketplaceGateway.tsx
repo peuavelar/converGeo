@@ -49,6 +49,10 @@ type PanelProps = {
   quartos: number;
   advancedFilters: AdvancedFilters;
   setAdvancedFilters: (v: AdvancedFilters) => void;
+  /** Pré-filtra marketplace por bairro/região (id). */
+  regionFilterId?: string | null;
+  regionFilterLabel?: string | null;
+  onClearRegionFilter?: () => void;
 };
 
 /** Heurísticas mock para suítes / vagas a partir do anúncio. */
@@ -96,32 +100,46 @@ export default function MarketplaceListPanel({
   quartos,
   advancedFilters,
   setAdvancedFilters,
+  regionFilterId = null,
+  regionFilterLabel = null,
+  onClearRegionFilter,
 }: PanelProps) {
   const [filter, setFilter] = useState<"todos" | "alto" | "medio">("todos");
   const [query, setQuery] = useState("");
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const focusedRef = useRef<HTMLDivElement | null>(null);
 
+  useEffect(() => {
+    if (regionFilterLabel) {
+      setQuery(regionFilterLabel);
+      setFilter("todos");
+    }
+  }, [regionFilterId, regionFilterLabel]);
+
   const { listings, filterRelaxed } = useMemo(() => {
     const pool = filterMarketplaceListings(filter);
     const q = query.trim().toLowerCase();
-    const bySearch = !q
-      ? pool
-      : pool.filter((l) => {
-          const n = NEIGHBORHOODS.find((x) => x.id === l.regionId);
-          const region = getRegionByIdSync(l.regionId);
-          const hay = [
-            l.title,
-            l.regionId,
-            l.regionId.replace(/-/g, " "),
-            n?.name,
-            region?.name,
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
-          return hay.includes(q);
-        });
+
+    let bySearch = pool;
+    if (regionFilterId) {
+      bySearch = pool.filter((l) => l.regionId === regionFilterId);
+    } else if (q) {
+      bySearch = pool.filter((l) => {
+        const n = NEIGHBORHOODS.find((x) => x.id === l.regionId);
+        const region = getRegionByIdSync(l.regionId);
+        const hay = [
+          l.title,
+          l.regionId,
+          l.regionId.replace(/-/g, " "),
+          n?.name,
+          region?.name,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return hay.includes(q);
+      });
+    }
 
     const byFiltro = bySearch.filter(
       (l) =>
@@ -160,7 +178,15 @@ export default function MarketplaceListPanel({
     }
 
     return { listings: result, filterRelaxed: relaxed };
-  }, [filter, focusedId, query, budget, quartos, advancedFilters]);
+  }, [
+    filter,
+    focusedId,
+    query,
+    budget,
+    quartos,
+    advancedFilters,
+    regionFilterId,
+  ]);
 
   const focusedListing =
     MARKETPLACE_LISTINGS.find((l) => l.id === focusedId) ?? null;
@@ -196,11 +222,32 @@ export default function MarketplaceListPanel({
 
       <header className="shrink-0 border-b border-[#e8e8ed] bg-white px-3 py-2.5">
         <h2 className="text-base font-bold text-[#2a2a33]">
-          Imóveis à venda em Salvador
+          {regionFilterLabel
+            ? `Imóveis em ${regionFilterLabel}`
+            : "Imóveis à venda em Salvador"}
         </h2>
         <p className="text-[11px] text-[#6a6a72]">
-          {listings.length} anúncios · marketplace ConverGeo
+          {listings.length} anúncio{listings.length === 1 ? "" : "s"} · marketplace
+          ConverGeo
         </p>
+        {regionFilterId && regionFilterLabel && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e8f1ff] px-2.5 py-1 text-[11px] font-bold text-[#006aff]">
+              Bairro: {regionFilterLabel}
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  onClearRegionFilter?.();
+                }}
+                className="ml-0.5 rounded-full px-1 hover:bg-white/80"
+                aria-label="Remover filtro de bairro"
+              >
+                ✕
+              </button>
+            </span>
+          </div>
+        )}
       </header>
 
       <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-[#e8e8ed] bg-white px-3 py-2">

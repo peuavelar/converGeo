@@ -6,11 +6,19 @@ import { marketplacePriceFull } from "../../data/marketplaceListings";
 import { neighborhoodPhoto } from "../../data/neighborhoodPhotos";
 import { NEIGHBORHOODS } from "../../data/neighborhoods";
 import { getRegionByIdSync } from "../../services/regionsApi";
+import { NearbyCategoryIcon } from "../map/NearbyCategoryIcon";
+import {
+  NEARBY_CATEGORY_META,
+  formatDistance,
+  type NearbyPlace,
+} from "../../services/nearbyPlaces";
 
 type Props = {
   listing: MarketplaceListing;
   onClose: () => void;
   onAskSino?: (question: string) => void;
+  nearbyPlaces?: NearbyPlace[];
+  nearbyLoading?: boolean;
 };
 
 const EXTRA_PHOTOS = [
@@ -33,6 +41,8 @@ export default function PropertyDetailOverlay({
   listing,
   onClose,
   onAskSino,
+  nearbyPlaces = [],
+  nearbyLoading = false,
 }: Props) {
   const [photoIdx, setPhotoIdx] = useState(0);
   const [tab, setTab] = useState<(typeof GALLERY_TABS)[number]>("Fotos");
@@ -52,6 +62,7 @@ export default function PropertyDetailOverlay({
 
   const monthly = Math.round(listing.price * 0.0075);
   const address = `${listing.title.replace("·", "—")} · ${neighborhood}, Salvador — BA`;
+  const nearbyPreview = nearbyPlaces.slice(0, 8);
 
   return (
     <div className="fixed inset-0 z-[80] flex items-stretch justify-center bg-black/55 p-0 backdrop-blur-[2px] animate-fade-in sm:items-center sm:p-6">
@@ -61,9 +72,8 @@ export default function PropertyDetailOverlay({
         aria-label={listing.title}
         className="flex h-[100dvh] max-h-[100dvh] w-full max-w-5xl flex-col overflow-hidden rounded-none bg-white shadow-2xl animate-market-pop sm:h-auto sm:max-h-[min(94vh,920px)] sm:rounded-2xl"
       >
-        {/* Hero / galeria */}
         <div className="relative shrink-0 bg-[#0a1220]">
-          <div className="relative h-[min(42vh,380px)] w-full">
+          <div className="relative h-[min(38vh,340px)] w-full sm:h-[min(42vh,380px)]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={photos[photoIdx]}
@@ -93,13 +103,6 @@ export default function PropertyDetailOverlay({
                 className="rounded-full bg-white/95 px-3 py-2 text-xs font-bold text-[#2a2a33] shadow hover:bg-white"
               >
                 Compartilhar
-              </button>
-              <button
-                type="button"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-sm font-bold text-[#2a2a33] shadow"
-                aria-label="Mais"
-              >
-                ···
               </button>
             </div>
 
@@ -136,7 +139,6 @@ export default function PropertyDetailOverlay({
           </div>
         </div>
 
-        {/* Contato corretor */}
         <button
           type="button"
           className="flex shrink-0 items-center justify-between border-b border-[#e8e8ed] bg-white px-4 py-3 text-left hover:bg-[#f8fafc]"
@@ -157,7 +159,6 @@ export default function PropertyDetailOverlay({
           <span className="text-[#6a6a72]">›</span>
         </button>
 
-        {/* Dados */}
         <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1">
@@ -192,16 +193,69 @@ export default function PropertyDetailOverlay({
                   {region.summary}
                 </p>
               )}
+
+              <div className="mt-4 rounded-xl border border-[#e0e7f1] bg-[#f8fafc] p-3">
+                <p className="text-xs font-bold text-[#2a2a33]">
+                  Locais próximos
+                </p>
+                <p className="mt-0.5 text-[11px] text-[#6a6a72]">
+                  Restaurantes, hospitais, delegacias e escolas ao redor. No
+                  mapa, toque nos ícones ou abra a legenda.
+                </p>
+                {nearbyLoading && (
+                  <p className="mt-2 text-[11px] font-medium text-[#006aff]">
+                    Carregando vizinhança…
+                  </p>
+                )}
+                <ul className="mt-2 space-y-1">
+                  {nearbyPreview.map((p) => (
+                    <li
+                      key={p.id}
+                      className="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-1.5 text-xs"
+                    >
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-white"
+                          style={{
+                            backgroundColor: `rgb(${NEARBY_CATEGORY_META[p.category].color.join(",")})`,
+                          }}
+                          title={NEARBY_CATEGORY_META[p.category].label}
+                        >
+                          <NearbyCategoryIcon
+                            category={p.category}
+                            className="h-3.5 w-3.5"
+                          />
+                        </span>
+                        <span className="truncate font-semibold text-[#2a2a33]">
+                          {p.name}
+                        </span>
+                      </span>
+                      <span className="shrink-0 font-bold text-[#006aff]">
+                        {formatDistance(p.distanceM)}
+                      </span>
+                    </li>
+                  ))}
+                  {!nearbyLoading && !nearbyPreview.length && (
+                    <li className="py-2 text-center text-[11px] text-[#6a6a72]">
+                      Nenhum ponto próximo carregado ainda.
+                    </li>
+                  )}
+                </ul>
+              </div>
             </div>
 
             <div className="w-full shrink-0 rounded-xl border border-[#d1d1d5] bg-[#f8fafc] p-3 sm:w-48">
               <div className="flex items-center gap-2">
                 <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0a1220] text-xs font-bold text-white">
-                  SM
+                  SA
                 </span>
                 <div>
-                  <p className="text-xs font-bold text-[#2a2a33]">Sino Mobile</p>
-                  <p className="text-[10px] text-[#6a6a72]">Assistente ConverGeo</p>
+                  <p className="text-xs font-bold text-[#2a2a33]">
+                    Sino Analytics
+                  </p>
+                  <p className="text-[10px] text-[#6a6a72]">
+                    Assistente ConverGeo
+                  </p>
                 </div>
               </div>
               <button
@@ -214,7 +268,6 @@ export default function PropertyDetailOverlay({
           </div>
         </div>
 
-        {/* Pergunte / chips */}
         <div className="shrink-0 border-t border-[#e8e8ed] bg-white px-4 py-3">
           <form
             onSubmit={(e) => {
@@ -235,7 +288,7 @@ export default function PropertyDetailOverlay({
               <input
                 value={ask}
                 onChange={(e) => setAsk(e.target.value)}
-                placeholder="Pergunte ao Sino Mobile sobre este imóvel..."
+                placeholder="Pergunte ao Sino Analytics sobre este imóvel..."
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#9a9aa3]"
               />
               <button
@@ -249,7 +302,7 @@ export default function PropertyDetailOverlay({
               {[
                 "Contatar corretor",
                 "Vale a pena comprar aqui?",
-                "Há estacionamento?",
+                "O que tem perto?",
               ].map((q) => (
                 <button
                   key={q}
