@@ -38,9 +38,6 @@ export default function ViewOpportunityHome({
             Explore oportunidades em Salvador
           </span>
         </div>
-        <h2 className="text-base font-bold tracking-tight text-[#2a2a33]">
-          Converse com o Sino Analytics
-        </h2>
       </div>
 
       <OpportunityHero
@@ -56,8 +53,8 @@ export default function ViewOpportunityHome({
       />
 
       <p className="rounded-lg border border-[#eef1f6] bg-[#f8fafc] px-3 py-2 text-[11px] leading-snug text-[#6a6a72]">
-        O ranking lista onde há mais oportunidade. Detalhes de preço e
-        valorização vêm pelo <strong className="text-[#006aff]">Sino Analytics</strong>.
+        Informe bairro, orçamento e perfil no chat. O Sino devolve preço,
+        infraestrutura e oportunidade.
       </p>
     </div>
   );
