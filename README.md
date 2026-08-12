@@ -29,7 +29,7 @@ Ao trocar de modo, o mapa mostra um estado de carregamento com transição suave
 - Código enxuto: hooks de mapa/nearby/negócio + builders de camadas
 - Benchmarks externos opcionais (score calibrado atrás de flag)
 
-Ver [CHANGELOG.md](./CHANGELOG.md) e [VERSION.md](./VERSION.md).
+Ver [CHANGELOG.md](./CHANGELOG.md), [VERSION.md](./VERSION.md), [docs/RELEASE_1.2.0.md](./docs/RELEASE_1.2.0.md) e [contexto.md](./contexto.md).
 
 ## Stack
 
@@ -113,6 +113,8 @@ curl http://localhost:3000/api/health
 
 | Doc | Conteúdo |
 |-----|----------|
+| [contexto.md](./contexto.md) | contexto completo da 1.2.0 (agentes / equipe) |
+| [docs/RELEASE_1.2.0.md](./docs/RELEASE_1.2.0.md) | release notes detalhadas |
 | [VERSION.md](./VERSION.md) | release atual |
 | [CHANGELOG.md](./CHANGELOG.md) | histórico de versões |
 | [docs/DATA_ARCHITECTURE.md](./docs/DATA_ARCHITECTURE.md) | BFF + motor Python |

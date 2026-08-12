@@ -6,6 +6,17 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
 
+  // Reduz memória/CPU no bundling de libs pesadas (mapa)
+  experimental: {
+    optimizePackageImports: [
+      "@deck.gl/core",
+      "@deck.gl/layers",
+      "@deck.gl/geo-layers",
+      "@deck.gl/react",
+      "maplibre-gl",
+    ],
+  },
+
   compiler: {
     // Remove console.* no build de produção
     removeConsole:

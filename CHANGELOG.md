@@ -23,6 +23,7 @@ Versionamento: [SemVer](https://semver.org/lang/pt-BR/).
 - README redesenhado para o GitHub
 - `VERSION.md` + este CHANGELOG
 - Benchmarks documentados em `docs/BENCHMARKS.md`
+- `contexto.md` + `docs/RELEASE_1.2.0.md` (evolução da versão)
 
 ## [1.1.0] — 2026-04
 

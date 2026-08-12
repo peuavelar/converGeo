@@ -12,6 +12,8 @@
 - Negócio: comparação A/B por digitação (regiões Salvador + Lauro de Freitas)
 - Benchmarks externos (S1) atrás de flag — score calibrado derivado
 - Docs GitHub: README + CHANGELOG
+- Documentação de release: [docs/RELEASE_1.2.0.md](./docs/RELEASE_1.2.0.md)
+- Contexto para agentes/equipe: [contexto.md](./contexto.md)
 
 ## Produção
 - Source maps do browser desabilitados

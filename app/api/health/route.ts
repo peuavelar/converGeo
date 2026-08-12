@@ -8,7 +8,7 @@ export async function GET() {
   return Response.json({
     ok: true,
     service: "convergeo-web",
-    version: "1.1.0",
+    version: "1.2.0",
     dataProvider: dataSources.mode,
     backendOrigin: dataSources.backendOrigin || null,
     osm: {

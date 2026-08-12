@@ -298,9 +298,9 @@ export default function PropertyDetailOverlay({
             <div className="flex items-center gap-2 rounded-full border border-[#c3c3c8] bg-[#f8fafc] px-3 py-2 focus-within:border-[#006aff] focus-within:ring-2 focus-within:ring-[#006aff]/20">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/sino-mobile-avatar.png"
+                src="/sino-mobile-avatar.png?v=surf-lean"
                 alt=""
-                className="h-7 w-7 rounded-full bg-white object-contain"
+                className="h-7 w-7 rounded-full bg-white object-cover"
               />
               <input
                 value={ask}

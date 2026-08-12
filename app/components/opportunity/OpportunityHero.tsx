@@ -132,9 +132,9 @@ export default function OpportunityHero({
           <div className="rounded-full bg-gradient-to-br from-[#006aff] to-[#00a3ff] p-[2px]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/sino-mobile-avatar.png"
+              src="/sino-mobile-avatar.png?v=surf-lean"
               alt="Sino Analytics"
-              className="h-9 w-9 rounded-full bg-white object-contain p-0.5"
+              className="h-9 w-9 rounded-full bg-white object-cover"
             />
           </div>
           <span
@@ -169,9 +169,9 @@ export default function OpportunityHero({
             <div key={m.id} className="flex items-end gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/sino-mobile-avatar.png"
+                src="/sino-mobile-avatar.png?v=surf-lean"
                 alt=""
-                className="mb-0.5 h-6 w-6 shrink-0 rounded-full bg-white object-contain p-0.5 ring-1 ring-[#dbe7f7]"
+                className="mb-0.5 h-6 w-6 shrink-0 rounded-full bg-white object-cover ring-1 ring-[#dbe7f7]"
               />
               <div className="max-w-[88%] rounded-2xl rounded-bl-md border border-[#e6edf5] bg-white px-3 py-2 shadow-sm">
                 <p className="text-[13px] leading-relaxed text-[#1e293b]">
