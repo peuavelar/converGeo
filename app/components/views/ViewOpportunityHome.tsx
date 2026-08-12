@@ -24,7 +24,7 @@ export default function ViewOpportunityHome({
   const [ranking, setRanking] = useState<RegionSummary[]>([]);
 
   useEffect(() => {
-    getRanking(8).then(setRanking);
+    getRanking(3).then(setRanking);
   }, []);
 
   return (
@@ -40,19 +40,23 @@ export default function ViewOpportunityHome({
         </div>
       </div>
 
-      <OpportunityHero onSelectRegion={onSelectRegion} />
+      <div className="min-h-0 flex-1">
+        <OpportunityHero onSelectRegion={onSelectRegion} />
+      </div>
 
-      <RegionRanking
-        regions={ranking}
-        selectedId={activeRegionId}
-        onSelect={onSelectRegion}
-        defaultOpen={false}
-      />
-
-      <p className="rounded-lg border border-[#eef1f6] bg-[#f8fafc] px-3 py-2 text-[11px] leading-snug text-[#6a6a72]">
+      <p className="shrink-0 rounded-lg border border-[#eef1f6] bg-[#f8fafc] px-3 py-2 text-[11px] leading-snug text-[#6a6a72]">
         Informe bairro, orçamento e perfil no chat. O Sino devolve preço,
         infraestrutura e oportunidade.
       </p>
+
+      <div className="mt-auto shrink-0 pt-1">
+        <RegionRanking
+          regions={ranking}
+          selectedId={activeRegionId}
+          onSelect={onSelectRegion}
+          defaultOpen={false}
+        />
+      </div>
     </div>
   );
 }

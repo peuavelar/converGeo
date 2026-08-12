@@ -9,13 +9,27 @@ import { useTypewriterPlaceholder } from "../../hooks/useTypewriterPlaceholder";
 import { getRegionByIdSync, searchRegions } from "../../services/regionsApi";
 import type { RegionDetail } from "../../types/region";
 
+type MetricsPayload = {
+  regionName: string;
+  precoM2: string;
+  precoVsMedia: string;
+  infra: number;
+  oferta: string;
+  lancamentos: number;
+  score: number;
+  valorizacao: string;
+  budgetLine: string;
+  segmentLine: string;
+  motivo: string;
+};
+
 type ChatMessage = {
   id: string;
   role: "sino" | "user";
   text: string;
+  metrics?: MetricsPayload;
 };
 
-/** Fluxo guiado até as métricas (preço · infra · oportunidade). */
 type IntakeStep = "idle" | "place" | "budget" | "profile" | "done";
 
 type Intake = {
@@ -50,7 +64,8 @@ function parseBudget(raw: string): number | null {
   const q = raw.trim().toLowerCase().replace(/\s+/g, " ");
   if (!q) return null;
 
-  const milhao = q.match(/(\d+(?:[.,]\d+)?)\s*mi(?:lh[aã]o|lh[oõ]es)?/);
+  // Exige "milhão/milhões" completo (evita "500 mil" virar 500 milhões)
+  const milhao = q.match(/(\d+(?:[.,]\d+)?)\s*milh(?:[aã]o|[oõ]es)\b/);
   if (milhao) {
     const n = Number(milhao[1].replace(",", "."));
     if (Number.isFinite(n) && n > 0) return Math.round(n * 1_000_000);
@@ -76,11 +91,12 @@ function parseProfile(raw: string): {
   goal: "morar" | "investir" | null;
 } {
   const q = raw.toLowerCase();
-  const goal: "morar" | "investir" | null = /invest/.test(q)
-    ? "investir"
-    : /morar|resid|moradia/.test(q)
-      ? "morar"
-      : null;
+  const goal: "morar" | "investir" | null =
+    /invest/.test(q)
+      ? "investir"
+      : /morar|moradia|resid/.test(q)
+        ? "morar"
+        : null;
 
   const roomMatch = q.match(/(\d)\s*(?:q|quarto)/);
   const quartos = roomMatch
@@ -92,34 +108,41 @@ function parseProfile(raw: string): {
   return { quartos, goal };
 }
 
-function formatMetrics(region: RegionDetail, intake: Intake): string {
+function buildMetrics(
+  region: RegionDetail,
+  intake: Intake,
+): MetricsPayload {
   const area =
     intake.budget && region.precoM2 > 0
       ? Math.max(20, Math.round(intake.budget / region.precoM2))
       : null;
 
-  const goalLine =
+  const segmentLine =
     intake.goal === "investir"
-      ? `Perfil investidor${intake.quartos ? ` · ${intake.quartos}q` : ""}.`
+      ? `Segmento investimento${intake.quartos ? ` · ${intake.quartos}q` : ""}`
       : intake.goal === "morar"
-        ? `Perfil moradia${intake.quartos ? ` · ${intake.quartos}q` : ""}.`
+        ? `Segmento moradia${intake.quartos ? ` · ${intake.quartos}q` : ""}`
         : "";
 
   const budgetLine = intake.budget
-    ? `Orçamento ${brl.format(intake.budget)}${area ? ` (~${area} m² aqui)` : ""}.`
+    ? `${brl.format(intake.budget)}${area ? ` · ~${area} m²` : ""}`
     : "";
 
-  return [
-    `Pronto — aqui estão as métricas de ${region.name}:`,
-    ``,
-    `• Preço: ${brl.format(region.precoM2)}/m² · vs média Salvador ${region.indicators.precoVsMediaSalvador >= 0 ? "+" : ""}${region.indicators.precoVsMediaSalvador.toFixed(0)}%`,
-    `• Infraestrutura: ${region.breakdown.infraestrutura}/100 · oferta ${region.oferta.toLowerCase()} · ${region.indicators.novosEmpreendimentos} lançamentos`,
-    `• Oportunidade: score ${region.score}/100 · valorização +${region.valorizacao12m.toFixed(1)}% em 12 meses`,
-    ``,
-    [budgetLine, goalLine, region.motivo, "Marquei no mapa."]
-      .filter(Boolean)
-      .join(" "),
-  ].join("\n");
+  const vs = region.indicators.precoVsMediaSalvador;
+
+  return {
+    regionName: region.name,
+    precoM2: `${brl.format(region.precoM2)}/m²`,
+    precoVsMedia: `${vs >= 0 ? "+" : ""}${vs.toFixed(0)}% vs Salvador`,
+    infra: region.breakdown.infraestrutura,
+    oferta: region.oferta,
+    lancamentos: region.indicators.novosEmpreendimentos,
+    score: region.score,
+    valorizacao: `+${region.valorizacao12m.toFixed(1)}% em 12 meses`,
+    budgetLine,
+    segmentLine,
+    motivo: region.motivo,
+  };
 }
 
 async function resolvePlace(
@@ -142,7 +165,56 @@ async function resolvePlace(
   return null;
 }
 
-/** Assistente de regiões — Sino Analytics. */
+function MetricsCard({ m }: { m: MetricsPayload }) {
+  return (
+    <div className="space-y-2.5">
+      <p className="text-[13px] font-semibold leading-snug text-[#1e293b]">
+        Métricas de {m.regionName}
+      </p>
+      <div className="grid grid-cols-1 gap-1.5">
+        <div className="rounded-xl border border-[#e6edf5] bg-[#f8fafc] px-2.5 py-2">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[#6a7a90]">
+            Preço
+          </p>
+          <p className="mt-0.5 text-[13px] font-bold text-[#0a1220]">
+            {m.precoM2}
+          </p>
+          <p className="text-[11px] text-[#6a7a90]">{m.precoVsMedia}</p>
+        </div>
+        <div className="rounded-xl border border-[#e6edf5] bg-[#f8fafc] px-2.5 py-2">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[#6a7a90]">
+            Infraestrutura
+          </p>
+          <p className="mt-0.5 text-[13px] font-bold text-[#0a1220]">
+            {m.infra}/100
+          </p>
+          <p className="text-[11px] text-[#6a7a90]">
+            Oferta {m.oferta.toLowerCase()} · {m.lancamentos} lançamentos
+          </p>
+        </div>
+        <div className="rounded-xl border border-[#e8f1ff] bg-[#e8f1ff]/50 px-2.5 py-2">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[#006aff]">
+            Oportunidade
+          </p>
+          <p className="mt-0.5 text-[13px] font-bold text-[#006aff]">
+            Score {m.score}/100
+          </p>
+          <p className="text-[11px] text-[#2a4a6e]">{m.valorizacao}</p>
+        </div>
+      </div>
+      {(m.budgetLine || m.segmentLine) && (
+        <p className="text-[11px] leading-snug text-[#6a7a90]">
+          {[m.budgetLine, m.segmentLine].filter(Boolean).join(" · ")}
+        </p>
+      )}
+      <p className="text-[12px] leading-snug text-[#1e293b]">
+        {m.motivo} Marquei no mapa.
+      </p>
+    </div>
+  );
+}
+
+/** Assistente de regiões: Sino Analytics. */
 export default function OpportunityHero({ onSelectRegion }: Props) {
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -186,8 +258,11 @@ export default function OpportunityHero({ onSelectRegion }: Props) {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const pushSino = (text: string) => {
-    setMessages((prev) => [...prev, { id: uid(), role: "sino", text }]);
+  const pushSino = (text: string, metrics?: MetricsPayload) => {
+    setMessages((prev) => [
+      ...prev,
+      { id: uid(), role: "sino", text, metrics },
+    ]);
   };
 
   const deliverMetrics = (regionId: string, nextIntake: Intake) => {
@@ -199,7 +274,7 @@ export default function OpportunityHero({ onSelectRegion }: Props) {
       setStep("place");
       return;
     }
-    pushSino(formatMetrics(region, nextIntake));
+    pushSino("", buildMetrics(region, nextIntake));
     onSelectRegion(regionId);
     setStep("done");
   };
@@ -207,24 +282,21 @@ export default function OpportunityHero({ onSelectRegion }: Props) {
   const askBudget = (name: string) => {
     setStep("budget");
     pushSino(
-      `Ótimo — vou analisar ${name}.\n\nPara cruzar preço, infraestrutura e oportunidade, qual seu orçamento aproximado?`,
+      `Ótimo, vou analisar ${name}.\n\nPara cruzar preço, infraestrutura e oportunidade, qual seu orçamento aproximado?`,
     );
   };
 
   const lockPlace = (id: string, name: string, greeted: boolean) => {
-    const next: Intake = {
+    setIntake({
       regionId: id,
       regionName: name,
       budget: null,
       quartos: null,
       goal: null,
-    };
-    setIntake(next);
+    });
     onSelectRegion(id);
     if (!greeted) {
-      pushSino(
-        `Olá! Sou o Sino Analytics. Vamos olhar ${name} juntos.`,
-      );
+      pushSino(`Olá! Sou o Sino Analytics. Vamos olhar ${name} juntos.`);
     } else {
       pushSino(`Perfeito, anotei ${name}.`);
     }
@@ -241,7 +313,6 @@ export default function OpportunityHero({ onSelectRegion }: Props) {
     setBusy(true);
 
     try {
-      // ── primeira interação / retomada ──────────────────────────
       if (step === "idle" || step === "done") {
         const match = await resolvePlace(text);
         if (match) {
@@ -265,12 +336,11 @@ export default function OpportunityHero({ onSelectRegion }: Props) {
         return;
       }
 
-      // ── local ──────────────────────────────────────────────────
       if (step === "place") {
         const match = await resolvePlace(text);
         if (!match) {
           pushSino(
-            "Ainda não achei esse local. Digite um bairro ou rua em Salvador / Lauro de Freitas — por exemplo Pituba ou Av. Paulo VI.",
+            "Ainda não achei esse local. Digite um bairro ou rua em Salvador / Lauro de Freitas, por exemplo Pituba ou Av. Paulo VI.",
           );
           return;
         }
@@ -278,7 +348,6 @@ export default function OpportunityHero({ onSelectRegion }: Props) {
         return;
       }
 
-      // ── orçamento ──────────────────────────────────────────────
       if (step === "budget") {
         const budget = parseBudget(text);
         if (!budget) {
@@ -287,21 +356,19 @@ export default function OpportunityHero({ onSelectRegion }: Props) {
           );
           return;
         }
-        const next = { ...intake, budget };
-        setIntake(next);
+        setIntake((prev) => ({ ...prev, budget }));
         setStep("profile");
         pushSino(
-          `Orçamento ${brl.format(budget)} anotado.\n\nAgora me diga: quantos quartos e o objetivo — morar ou investir?`,
+          `Orçamento ${brl.format(budget)} anotado.\n\nAgora me diga: quantos quartos e qual segmento? Moradia ou investimento?`,
         );
         return;
       }
 
-      // ── perfil ─────────────────────────────────────────────────
       if (step === "profile") {
         const { quartos, goal } = parseProfile(text);
         if (!quartos && !goal) {
           pushSino(
-            "Quase lá. Me diga os quartos e o objetivo.\n\nExemplos: “2 quartos para morar” ou “investir, 3q”.",
+            "Quase lá. Me diga os quartos e o segmento.\n\nExemplos: “2 quartos, moradia” ou “investimento, 3q”.",
           );
           return;
         }
@@ -312,7 +379,6 @@ export default function OpportunityHero({ onSelectRegion }: Props) {
         };
         setIntake(next);
         if (next.regionId) deliverMetrics(next.regionId, next);
-        return;
       }
     } finally {
       setBusy(false);
@@ -329,7 +395,7 @@ export default function OpportunityHero({ onSelectRegion }: Props) {
   };
 
   return (
-    <section className="flex max-h-[min(42vh,340px)] flex-col overflow-hidden rounded-2xl border border-[#e0e7f1] bg-white shadow-[0_8px_28px_rgba(15,40,80,0.08)]">
+    <section className="flex h-full min-h-[min(52vh,480px)] max-h-[min(70vh,640px)] flex-col overflow-hidden rounded-2xl border border-[#e0e7f1] bg-white shadow-[0_8px_28px_rgba(15,40,80,0.08)]">
       <header className="flex shrink-0 items-center gap-3 border-b border-[#eef1f6] bg-gradient-to-r from-[#f7faff] to-white px-3.5 py-2.5">
         <div className="relative shrink-0">
           <div className="rounded-full bg-gradient-to-br from-[#006aff] to-[#00a3ff] p-[2px]">
@@ -362,12 +428,12 @@ export default function OpportunityHero({ onSelectRegion }: Props) {
 
       <div className="custom-scrollbar relative min-h-0 flex-1 space-y-2.5 overflow-y-auto bg-[#f8fafc] px-3 py-3">
         {messages.length === 0 && !busy && (
-          <div className="flex h-full min-h-[120px] flex-col items-center justify-center px-4 text-center">
+          <div className="flex h-full min-h-[160px] flex-col items-center justify-center px-4 text-center">
             <p className="text-[13px] font-medium text-[#8a96a8]">
               Digite abaixo para começar
             </p>
             <p className="mt-1 text-[11px] leading-snug text-[#a0aab8]">
-              O Sino pede bairro, orçamento e perfil — e devolve preço,
+              O Sino pede bairro, orçamento e perfil, e devolve preço,
               infraestrutura e oportunidade.
             </p>
           </div>
@@ -389,9 +455,13 @@ export default function OpportunityHero({ onSelectRegion }: Props) {
                 className="mb-0.5 h-6 w-6 shrink-0 rounded-full bg-white object-cover ring-1 ring-[#dbe7f7]"
               />
               <div className="max-w-[88%] rounded-2xl rounded-bl-md border border-[#e6edf5] bg-white px-3 py-2 shadow-sm">
-                <p className="whitespace-pre-line text-[13px] leading-relaxed text-[#1e293b]">
-                  {m.text}
-                </p>
+                {m.metrics ? (
+                  <MetricsCard m={m.metrics} />
+                ) : (
+                  <p className="whitespace-pre-line text-[13px] leading-relaxed text-[#1e293b]">
+                    {m.text}
+                  </p>
+                )}
               </div>
             </div>
           ),
