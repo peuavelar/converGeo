@@ -40,10 +40,7 @@ export default function ViewOpportunityHome({
         </div>
       </div>
 
-      <OpportunityHero
-        onSelectRegion={onSelectRegion}
-        rankingHint={ranking.slice(0, 5).map((r) => r.name)}
-      />
+      <OpportunityHero onSelectRegion={onSelectRegion} />
 
       <RegionRanking
         regions={ranking}

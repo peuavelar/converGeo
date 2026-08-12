@@ -15,7 +15,8 @@ type ChatMessage = {
   text: string;
 };
 
-type IntakeStep = "place" | "budget" | "profile" | "done";
+/** Fluxo guiado até as métricas (preço · infra · oportunidade). */
+type IntakeStep = "idle" | "place" | "budget" | "profile" | "done";
 
 type Intake = {
   regionId: string | null;
@@ -27,25 +28,23 @@ type Intake = {
 
 type Props = {
   onSelectRegion: (id: string) => void;
-  suggestions?: string[];
-  rankingHint?: string[];
 };
 
 function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-const INTRO: ChatMessage = {
-  id: "intro-1",
-  role: "sino",
-  text: "Converse com o Sino Analytics...",
-};
-
 const brl = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
   maximumFractionDigits: 0,
 });
+
+function isGreeting(raw: string) {
+  return /^(oi|ol[aá]|hey|hello|e a[ií]|bom dia|boa tarde|boa noite|tudo bem|fala|salve)\b/i.test(
+    raw.trim(),
+  );
+}
 
 function parseBudget(raw: string): number | null {
   const q = raw.trim().toLowerCase().replace(/\s+/g, " ");
@@ -101,24 +100,26 @@ function formatMetrics(region: RegionDetail, intake: Intake): string {
 
   const goalLine =
     intake.goal === "investir"
-      ? `Perfil investidor${intake.quartos ? ` · ${intake.quartos}q` : ""}: priorizo valorização e liquidez.`
+      ? `Perfil investidor${intake.quartos ? ` · ${intake.quartos}q` : ""}.`
       : intake.goal === "morar"
-        ? `Perfil moradia${intake.quartos ? ` · ${intake.quartos}q` : ""}: cruzo conforto, infra e preço.`
+        ? `Perfil moradia${intake.quartos ? ` · ${intake.quartos}q` : ""}.`
         : "";
 
   const budgetLine = intake.budget
-    ? `Com ${brl.format(intake.budget)}${area ? ` (~${area} m² nesta região)` : ""}. `
+    ? `Orçamento ${brl.format(intake.budget)}${area ? ` (~${area} m² aqui)` : ""}.`
     : "";
 
   return [
-    `${region.name} — métricas pedidas:`,
+    `Pronto — aqui estão as métricas de ${region.name}:`,
+    ``,
     `• Preço: ${brl.format(region.precoM2)}/m² · vs média Salvador ${region.indicators.precoVsMediaSalvador >= 0 ? "+" : ""}${region.indicators.precoVsMediaSalvador.toFixed(0)}%`,
     `• Infraestrutura: ${region.breakdown.infraestrutura}/100 · oferta ${region.oferta.toLowerCase()} · ${region.indicators.novosEmpreendimentos} lançamentos`,
     `• Oportunidade: score ${region.score}/100 · valorização +${region.valorizacao12m.toFixed(1)}% em 12 meses`,
-    `${budgetLine}${goalLine} ${region.motivo} Marquei no mapa.`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+    ``,
+    [budgetLine, goalLine, region.motivo, "Marquei no mapa."]
+      .filter(Boolean)
+      .join(" "),
+  ].join("\n");
 }
 
 async function resolvePlace(
@@ -142,16 +143,11 @@ async function resolvePlace(
 }
 
 /** Assistente de regiões — Sino Analytics. */
-export default function OpportunityHero({
-  onSelectRegion,
-  suggestions,
-  rankingHint = ["Pituba", "Imbuí", "Paralela", "Horto Florestal", "Itapuã"],
-}: Props) {
-  const chips = suggestions?.length ? suggestions : rankingHint;
+export default function OpportunityHero({ onSelectRegion }: Props) {
   const [draft, setDraft] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([INTRO]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [busy, setBusy] = useState(false);
-  const [step, setStep] = useState<IntakeStep>("place");
+  const [step, setStep] = useState<IntakeStep>("idle");
   const [intake, setIntake] = useState<Intake>({
     regionId: null,
     regionName: null,
@@ -166,19 +162,13 @@ export default function OpportunityHero({
   const listId = useId();
 
   const typedPlaceholder = useTypewriterPlaceholder(
-    step === "place"
-      ? "Busque um endereço"
-      : step === "budget"
-        ? "Ex.: 450 mil ou R$ 600.000"
-        : step === "profile"
-          ? "Ex.: 2 quartos · morar"
-          : "Pergunte outra região…",
-    step,
+    "Converse com o Sino Analytics...",
+    "sino-idle",
   );
   const showTyped = !draft.trim();
-  const addressHits =
-    step === "place" ? buildAddressSuggestions(draft, 6) : [];
-  const showList = suggestOpen && step === "place" && addressHits.length > 0;
+  const canSuggest = step === "idle" || step === "place" || step === "done";
+  const addressHits = canSuggest ? buildAddressSuggestions(draft, 6) : [];
+  const showList = suggestOpen && canSuggest && addressHits.length > 0;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -186,7 +176,7 @@ export default function OpportunityHero({
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [draft, step]);
+  }, [draft]);
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -203,7 +193,10 @@ export default function OpportunityHero({
   const deliverMetrics = (regionId: string, nextIntake: Intake) => {
     const region = getRegionByIdSync(regionId);
     if (!region) {
-      pushSino("Não consegui carregar as métricas dessa região. Tente outra.");
+      pushSino(
+        "Não consegui carregar as métricas dessa região. Me diga outro bairro ou endereço.",
+      );
+      setStep("place");
       return;
     }
     pushSino(formatMetrics(region, nextIntake));
@@ -211,7 +204,14 @@ export default function OpportunityHero({
     setStep("done");
   };
 
-  const startIntakeForPlace = (id: string, name: string) => {
+  const askBudget = (name: string) => {
+    setStep("budget");
+    pushSino(
+      `Ótimo — vou analisar ${name}.\n\nPara cruzar preço, infraestrutura e oportunidade, qual seu orçamento aproximado?`,
+    );
+  };
+
+  const lockPlace = (id: string, name: string, greeted: boolean) => {
     const next: Intake = {
       regionId: id,
       regionName: name,
@@ -221,10 +221,14 @@ export default function OpportunityHero({
     };
     setIntake(next);
     onSelectRegion(id);
-    setStep("budget");
-    pushSino(
-      `Ok — ${name}. Para cruzar preço, infraestrutura e oportunidade, qual seu orçamento aproximado?`,
-    );
+    if (!greeted) {
+      pushSino(
+        `Olá! Sou o Sino Analytics. Vamos olhar ${name} juntos.`,
+      );
+    } else {
+      pushSino(`Perfeito, anotei ${name}.`);
+    }
+    askBudget(name);
   };
 
   const send = async (raw: string) => {
@@ -237,35 +241,49 @@ export default function OpportunityHero({
     setBusy(true);
 
     try {
-      if (step === "place" || step === "done") {
-        if (/ranking|melhor(es)?|top\s*\d*|onde vale|recomend/.test(text.toLowerCase())) {
-          const top = chips.slice(0, 5);
-          pushSino(
-            top.length
-              ? `Ranking de oportunidade: ${top.map((n, i) => `${i + 1}º ${n}`).join(", ")}. Digite um bairro ou endereço para eu pedir os dados e detalhar as métricas.`
-              : "Digite um bairro ou endereço para eu analisar.",
-          );
-          setStep("place");
+      // ── primeira interação / retomada ──────────────────────────
+      if (step === "idle" || step === "done") {
+        const match = await resolvePlace(text);
+        if (match) {
+          lockPlace(match.id, match.name, false);
           return;
         }
 
-        const match = await resolvePlace(text);
-        if (!match) {
-          pushSino(
-            "Não achei esse local. Busque um bairro ou endereço em Salvador / Lauro — como no campo de endereço.",
-          );
-          setStep("place");
-          return;
-        }
-        startIntakeForPlace(match.id, match.name);
+        setStep("place");
+        setIntake({
+          regionId: null,
+          regionName: null,
+          budget: null,
+          quartos: null,
+          goal: null,
+        });
+        pushSino(
+          isGreeting(text)
+            ? "Olá! Sou o Sino Analytics.\n\nCruzo preço, infraestrutura e oportunidade em Salvador e Lauro de Freitas.\n\nQual bairro ou endereço você quer analisar?"
+            : "Olá! Sou o Sino Analytics.\n\nPara entregar preço, infraestrutura e oportunidade, preciso de alguns dados.\n\nQual bairro ou endereço você quer analisar?",
+        );
         return;
       }
 
+      // ── local ──────────────────────────────────────────────────
+      if (step === "place") {
+        const match = await resolvePlace(text);
+        if (!match) {
+          pushSino(
+            "Ainda não achei esse local. Digite um bairro ou rua em Salvador / Lauro de Freitas — por exemplo Pituba ou Av. Paulo VI.",
+          );
+          return;
+        }
+        lockPlace(match.id, match.name, true);
+        return;
+      }
+
+      // ── orçamento ──────────────────────────────────────────────
       if (step === "budget") {
         const budget = parseBudget(text);
         if (!budget) {
           pushSino(
-            "Preciso do orçamento em reais para calcular preço e poder de compra. Ex.: 450 mil, 600000 ou R$ 800.000.",
+            "Preciso do orçamento em reais para calcular poder de compra e preço.\n\nPode ser assim: 450 mil, 600000 ou R$ 800.000.",
           );
           return;
         }
@@ -273,16 +291,17 @@ export default function OpportunityHero({
         setIntake(next);
         setStep("profile");
         pushSino(
-          `Orçamento ${brl.format(budget)} anotado. Agora: quantos quartos e o objetivo — morar ou investir?`,
+          `Orçamento ${brl.format(budget)} anotado.\n\nAgora me diga: quantos quartos e o objetivo — morar ou investir?`,
         );
         return;
       }
 
+      // ── perfil ─────────────────────────────────────────────────
       if (step === "profile") {
         const { quartos, goal } = parseProfile(text);
         if (!quartos && !goal) {
           pushSino(
-            "Me diga os quartos e o objetivo. Ex.: “2 quartos para morar” ou “investir, 3q”.",
+            "Quase lá. Me diga os quartos e o objetivo.\n\nExemplos: “2 quartos para morar” ou “investir, 3q”.",
           );
           return;
         }
@@ -308,13 +327,6 @@ export default function OpportunityHero({
     setSuggestOpen(false);
     void send(label);
   };
-
-  const chipActions =
-    step === "budget"
-      ? ["350 mil", "500 mil", "700 mil", "1 milhão"]
-      : step === "profile"
-        ? ["2q · morar", "3q · investir", "1q · morar"]
-        : chips;
 
   return (
     <section className="flex max-h-[min(42vh,340px)] flex-col overflow-hidden rounded-2xl border border-[#e0e7f1] bg-white shadow-[0_8px_28px_rgba(15,40,80,0.08)]">
@@ -349,6 +361,18 @@ export default function OpportunityHero({
       </header>
 
       <div className="custom-scrollbar relative min-h-0 flex-1 space-y-2.5 overflow-y-auto bg-[#f8fafc] px-3 py-3">
+        {messages.length === 0 && !busy && (
+          <div className="flex h-full min-h-[120px] flex-col items-center justify-center px-4 text-center">
+            <p className="text-[13px] font-medium text-[#8a96a8]">
+              Digite abaixo para começar
+            </p>
+            <p className="mt-1 text-[11px] leading-snug text-[#a0aab8]">
+              O Sino pede bairro, orçamento e perfil — e devolve preço,
+              infraestrutura e oportunidade.
+            </p>
+          </div>
+        )}
+
         {messages.map((m) =>
           m.role === "user" ? (
             <div key={m.id} className="flex justify-end">
@@ -373,22 +397,6 @@ export default function OpportunityHero({
           ),
         )}
 
-        {chipActions.length > 0 && !busy && (
-          <div className="flex flex-wrap gap-1.5 pl-8">
-            {chipActions.map((s) => (
-              <button
-                key={s}
-                type="button"
-                disabled={busy}
-                onClick={() => void send(s)}
-                className="rounded-full border border-[#d7e3f2] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#2a4a6e] transition hover:border-[#006aff] hover:bg-[#e8f1ff] hover:text-[#006aff] disabled:opacity-50"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        )}
-
         {busy && (
           <div className="flex items-center gap-2 pl-8 text-[12px] font-medium text-[#006aff]">
             <span className="inline-flex gap-0.5">
@@ -411,25 +419,21 @@ export default function OpportunityHero({
         className="shrink-0 border-t border-[#eef1f6] bg-white p-2.5"
       >
         <label htmlFor="sino-chat-input" className="sr-only">
-          {step === "place"
-            ? "Busque um endereço"
-            : "Mensagem para Sino Analytics"}
+          Converse com o Sino Analytics
         </label>
         <div ref={rootRef} className="relative">
           <div className="group flex min-h-[44px] items-center gap-2 rounded-full border border-[#d7e0ea] bg-[#f8fafc] px-2 py-1 transition focus-within:border-[#006aff] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#006aff]/20">
-            {step === "place" && (
-              <svg
-                viewBox="0 0 24 24"
-                className="ml-1 h-4 w-4 shrink-0 text-[#8a8a93] group-focus-within:text-[#006aff]"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden
-              >
-                <circle cx="11" cy="11" r="7" />
-                <path d="m20 20-3.5-3.5" />
-              </svg>
-            )}
+            <svg
+              viewBox="0 0 24 24"
+              className="ml-1 h-4 w-4 shrink-0 text-[#8a8a93] group-focus-within:text-[#006aff]"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
             <div className="relative min-w-0 flex-1">
               {showTyped && (
                 <span
@@ -442,17 +446,17 @@ export default function OpportunityHero({
               )}
               <input
                 id="sino-chat-input"
-                role={step === "place" ? "combobox" : undefined}
-                aria-expanded={step === "place" ? showList : undefined}
-                aria-controls={step === "place" ? listId : undefined}
-                aria-autocomplete={step === "place" ? "list" : undefined}
+                role={canSuggest ? "combobox" : undefined}
+                aria-expanded={canSuggest ? showList : undefined}
+                aria-controls={canSuggest ? listId : undefined}
+                aria-autocomplete={canSuggest ? "list" : undefined}
                 value={draft}
                 onChange={(e) => {
                   setDraft(e.target.value);
-                  if (step === "place") setSuggestOpen(true);
+                  if (canSuggest) setSuggestOpen(true);
                 }}
                 onFocus={() => {
-                  if (step === "place") setSuggestOpen(true);
+                  if (canSuggest) setSuggestOpen(true);
                 }}
                 onKeyDown={(e) => {
                   if (!showList) return;
@@ -481,9 +485,9 @@ export default function OpportunityHero({
               type="submit"
               className="shrink-0 rounded-full bg-[#006aff] px-3 py-1.5 text-[11px] font-bold text-white shadow-sm hover:bg-[#0058d6] disabled:opacity-40"
               disabled={!draft.trim() || busy}
-              aria-label="Buscar"
+              aria-label="Enviar"
             >
-              {step === "place" ? "Buscar" : "Enviar"}
+              Enviar
             </button>
           </div>
 
