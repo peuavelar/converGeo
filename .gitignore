@@ -20,6 +20,7 @@
 # python engine
 engine/.venv/
 engine/**/__pycache__/
+engine/**/*.egg-info/
 __pycache__/
 *.pyc
 
