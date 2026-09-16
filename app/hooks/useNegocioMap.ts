@@ -12,11 +12,11 @@ type LatLng = { lat: number; lng: number };
 
 export function useMapCamera(appMode: AppMode) {
   const [viewState, setViewState] = useState({
-    longitude: -38.4813,
-    latitude: -12.9515,
-    zoom: 12,
-    pitch: 0,
-    bearing: 0,
+    longitude: -38.48,
+    latitude: -12.98,
+    zoom: 11.2,
+    pitch: appMode === "negocio" ? 42 : 0,
+    bearing: appMode === "negocio" ? -12 : 0,
   });
 
   const flyTo = (lat: number, lng: number, zoom = 14) => {

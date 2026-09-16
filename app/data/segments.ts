@@ -104,12 +104,6 @@ export const BUSINESS_SEGMENTS: BusinessSegment[] = [
     cnae: "85.99-6",
     baseInvestment: 150000,
   },
-  {
-    value: "imobiliaria",
-    label: "Imobiliária",
-    cnae: "68.21-8",
-    baseInvestment: 120000,
-  },
 ];
 
 export function getSegmentLabel(value: string): string {

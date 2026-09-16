@@ -1,7 +1,11 @@
 type LatLng = { lat: number; lng: number };
 
 function apiBase() {
-  return (process.env.NEXT_PUBLIC_API_URL || "/backend").replace(/\/$/, "");
+  return (
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_ORIGIN ||
+    "/backend"
+  ).replace(/\/$/, "");
 }
 
 async function jsonGet(url: string) {
@@ -43,7 +47,7 @@ export async function fetchNegocioHex(opts: {
   const { viewMode, segment, lastCoordinate, compareLocations } = opts;
 
   if (viewMode === "heatmap") {
-    const data = await jsonGet(`${base}/top?segmento=${segment}&limit=300`);
+    const data = await jsonGet(`${base}/top?segmento=${segment}&limit=500`);
     return { hexData: okList(data), competitorPins: [] };
   }
 
