@@ -1,151 +1,26 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
-import {
-  buildAddressSuggestions,
-  type AddressSuggestion,
-} from "../../data/streets";
-import { useTypewriterPlaceholder } from "../../hooks/useTypewriterPlaceholder";
+import { useEffect, useRef, useState } from "react";
+import { NEIGHBORHOODS } from "../../data/neighborhoods";
 import { getRegionByIdSync, searchRegions } from "../../services/regionsApi";
-import type { RegionDetail } from "../../types/region";
-
-type MetricsPayload = {
-  regionName: string;
-  precoM2: string;
-  precoVsMedia: string;
-  infra: number;
-  oferta: string;
-  lancamentos: number;
-  score: number;
-  valorizacao: string;
-  budgetLine: string;
-  segmentLine: string;
-  motivo: string;
-};
 
 type ChatMessage = {
   id: string;
   role: "sino" | "user";
   text: string;
-  metrics?: MetricsPayload;
-};
-
-type IntakeStep = "idle" | "place" | "budget" | "profile" | "done";
-
-type Intake = {
-  regionId: string | null;
-  regionName: string | null;
-  budget: number | null;
-  quartos: number | null;
-  goal: "morar" | "investir" | null;
 };
 
 type Props = {
   onSelectRegion: (id: string) => void;
+  suggestions?: string[];
+  rankingHint?: string[];
 };
 
 function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-const brl = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  maximumFractionDigits: 0,
-});
-
-function isGreeting(raw: string) {
-  return /^(oi|ol[aá]|hey|hello|e a[ií]|bom dia|boa tarde|boa noite|tudo bem|fala|salve)\b/i.test(
-    raw.trim(),
-  );
-}
-
-function parseBudget(raw: string): number | null {
-  const q = raw.trim().toLowerCase().replace(/\s+/g, " ");
-  if (!q) return null;
-
-  // Exige "milhão/milhões" completo (evita "500 mil" virar 500 milhões)
-  const milhao = q.match(/(\d+(?:[.,]\d+)?)\s*milh(?:[aã]o|[oõ]es)\b/);
-  if (milhao) {
-    const n = Number(milhao[1].replace(",", "."));
-    if (Number.isFinite(n) && n > 0) return Math.round(n * 1_000_000);
-  }
-
-  const mil = q.match(/(\d+(?:[.,]\d+)?)\s*mil\b/);
-  if (mil) {
-    const n = Number(mil[1].replace(",", "."));
-    if (Number.isFinite(n) && n > 0) return Math.round(n * 1_000);
-  }
-
-  const digits = q.replace(/[^\d]/g, "");
-  if (digits.length >= 4) {
-    const n = Number(digits);
-    if (Number.isFinite(n) && n >= 50_000) return n;
-  }
-
-  return null;
-}
-
-function parseProfile(raw: string): {
-  quartos: number | null;
-  goal: "morar" | "investir" | null;
-} {
-  const q = raw.toLowerCase();
-  const goal: "morar" | "investir" | null =
-    /invest/.test(q)
-      ? "investir"
-      : /morar|moradia|resid/.test(q)
-        ? "morar"
-        : null;
-
-  const roomMatch = q.match(/(\d)\s*(?:q|quarto)/);
-  const quartos = roomMatch
-    ? Number(roomMatch[1])
-    : /\bstudio\b|kitnet|1\s*dorm/.test(q)
-      ? 1
-      : null;
-
-  return { quartos, goal };
-}
-
-function buildMetrics(
-  region: RegionDetail,
-  intake: Intake,
-): MetricsPayload {
-  const area =
-    intake.budget && region.precoM2 > 0
-      ? Math.max(20, Math.round(intake.budget / region.precoM2))
-      : null;
-
-  const segmentLine =
-    intake.goal === "investir"
-      ? `Segmento investimento${intake.quartos ? ` · ${intake.quartos}q` : ""}`
-      : intake.goal === "morar"
-        ? `Segmento moradia${intake.quartos ? ` · ${intake.quartos}q` : ""}`
-        : "";
-
-  const budgetLine = intake.budget
-    ? `${brl.format(intake.budget)}${area ? ` · ~${area} m²` : ""}`
-    : "";
-
-  const vs = region.indicators.precoVsMediaSalvador;
-
-  return {
-    regionName: region.name,
-    precoM2: `${brl.format(region.precoM2)}/m²`,
-    precoVsMedia: `${vs >= 0 ? "+" : ""}${vs.toFixed(0)}% vs Salvador`,
-    infra: region.breakdown.infraestrutura,
-    oferta: region.oferta,
-    lancamentos: region.indicators.novosEmpreendimentos,
-    score: region.score,
-    valorizacao: `+${region.valorizacao12m.toFixed(1)}% em 12 meses`,
-    budgetLine,
-    segmentLine,
-    motivo: region.motivo,
-  };
-}
-
-async function resolvePlace(
+async function resolveFromChat(
   raw: string,
 ): Promise<{ id: string; name: string } | null> {
   const q = raw.trim().toLowerCase();
@@ -154,248 +29,104 @@ async function resolvePlace(
   const hits = await searchRegions(q);
   if (hits[0]) return { id: hits[0].id, name: hits[0].name };
 
-  const suggestions = buildAddressSuggestions(raw, 1);
-  if (suggestions[0]) {
-    return {
-      id: suggestions[0].neighborhoodId,
-      name: suggestions[0].neighborhoodName,
-    };
-  }
+  const byName = [...NEIGHBORHOODS]
+    .sort((a, b) => b.name.length - a.name.length)
+    .find((n) => q.includes(n.name.toLowerCase()));
+  if (byName) return { id: byName.id, name: byName.name };
 
   return null;
 }
 
-function MetricsCard({ m }: { m: MetricsPayload }) {
-  return (
-    <div className="space-y-2.5">
-      <p className="text-[13px] font-semibold leading-snug text-[#1e293b]">
-        Métricas de {m.regionName}
-      </p>
-      <div className="grid grid-cols-1 gap-1.5">
-        <div className="rounded-xl border border-[#e6edf5] bg-[#f8fafc] px-2.5 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[#6a7a90]">
-            Preço
-          </p>
-          <p className="mt-0.5 text-[13px] font-bold text-[#0a1220]">
-            {m.precoM2}
-          </p>
-          <p className="text-[11px] text-[#6a7a90]">{m.precoVsMedia}</p>
-        </div>
-        <div className="rounded-xl border border-[#e6edf5] bg-[#f8fafc] px-2.5 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[#6a7a90]">
-            Infraestrutura
-          </p>
-          <p className="mt-0.5 text-[13px] font-bold text-[#0a1220]">
-            {m.infra}/100
-          </p>
-          <p className="text-[11px] text-[#6a7a90]">
-            Oferta {m.oferta.toLowerCase()} · {m.lancamentos} lançamentos
-          </p>
-        </div>
-        <div className="rounded-xl border border-[#e8f1ff] bg-[#e8f1ff]/50 px-2.5 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[#006aff]">
-            Oportunidade
-          </p>
-          <p className="mt-0.5 text-[13px] font-bold text-[#006aff]">
-            Score {m.score}/100
-          </p>
-          <p className="text-[11px] text-[#2a4a6e]">{m.valorizacao}</p>
-        </div>
-      </div>
-      {(m.budgetLine || m.segmentLine) && (
-        <p className="text-[11px] leading-snug text-[#6a7a90]">
-          {[m.budgetLine, m.segmentLine].filter(Boolean).join(" · ")}
-        </p>
-      )}
-      <p className="text-[12px] leading-snug text-[#1e293b]">
-        {m.motivo} Marquei no mapa.
-      </p>
-    </div>
+function wantsRanking(q: string) {
+  return /ranking|melhor(es)?|oportunidad|top\s*\d*|onde vale|recomend/.test(
+    q.toLowerCase(),
   );
 }
 
-/** Assistente de regiões: Sino Analytics. */
-export default function OpportunityHero({ onSelectRegion }: Props) {
-  const [draft, setDraft] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [step, setStep] = useState<IntakeStep>("idle");
-  const [intake, setIntake] = useState<Intake>({
-    regionId: null,
-    regionName: null,
-    budget: null,
-    quartos: null,
-    goal: null,
-  });
-  const [suggestOpen, setSuggestOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const listId = useId();
+const INTRO: ChatMessage[] = [
+  {
+    id: "intro-1",
+    role: "sino",
+    text: "Olá! Sou o Sino Analytics. Onde vale a pena comprar hoje em Salvador?",
+  },
+  {
+    id: "intro-2",
+    role: "sino",
+    text: "Digite um bairro ou use um atalho — cruzo preço, infraestrutura e oportunidade em segundos.",
+  },
+];
 
-  const typedPlaceholder = useTypewriterPlaceholder(
-    "Converse com o Sino Analytics...",
-    "sino-idle",
-  );
-  const showTyped = !draft.trim();
-  const canSuggest = step === "idle" || step === "place" || step === "done";
-  const addressHits = canSuggest ? buildAddressSuggestions(draft, 6) : [];
-  const showList = suggestOpen && canSuggest && addressHits.length > 0;
+/** Assistente de regiões — Sino Analytics. */
+export default function OpportunityHero({
+  onSelectRegion,
+  suggestions,
+  rankingHint = ["Pituba", "Imbuí", "Paralela", "Horto Florestal", "Itapuã"],
+}: Props) {
+  const chips = suggestions?.length ? suggestions : rankingHint;
+  const [draft, setDraft] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>(INTRO);
+  const [busy, setBusy] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
-
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [draft]);
-
-  useEffect(() => {
-    const onDocClick = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setSuggestOpen(false);
-    };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);
-
-  const pushSino = (text: string, metrics?: MetricsPayload) => {
-    setMessages((prev) => [
-      ...prev,
-      { id: uid(), role: "sino", text, metrics },
-    ]);
-  };
-
-  const deliverMetrics = (regionId: string, nextIntake: Intake) => {
-    const region = getRegionByIdSync(regionId);
-    if (!region) {
-      pushSino(
-        "Não consegui carregar as métricas dessa região. Me diga outro bairro ou endereço.",
-      );
-      setStep("place");
-      return;
-    }
-    pushSino("", buildMetrics(region, nextIntake));
-    onSelectRegion(regionId);
-    setStep("done");
-  };
-
-  const askBudget = (name: string) => {
-    setStep("budget");
-    pushSino(
-      `Ótimo, vou analisar ${name}.\n\nPara cruzar preço, infraestrutura e oportunidade, qual seu orçamento aproximado?`,
-    );
-  };
-
-  const lockPlace = (id: string, name: string, greeted: boolean) => {
-    setIntake({
-      regionId: id,
-      regionName: name,
-      budget: null,
-      quartos: null,
-      goal: null,
-    });
-    onSelectRegion(id);
-    if (!greeted) {
-      pushSino(`Olá! Sou o Sino Analytics. Vamos olhar ${name} juntos.`);
-    } else {
-      pushSino(`Perfeito, anotei ${name}.`);
-    }
-    askBudget(name);
-  };
 
   const send = async (raw: string) => {
     const text = raw.trim();
     if (!text || busy) return;
 
     setDraft("");
-    setSuggestOpen(false);
     setMessages((prev) => [...prev, { id: uid(), role: "user", text }]);
     setBusy(true);
 
     try {
-      if (step === "idle" || step === "done") {
-        const match = await resolvePlace(text);
-        if (match) {
-          lockPlace(match.id, match.name, false);
-          return;
-        }
-
-        setStep("place");
-        setIntake({
-          regionId: null,
-          regionName: null,
-          budget: null,
-          quartos: null,
-          goal: null,
-        });
-        pushSino(
-          isGreeting(text)
-            ? "Olá! Sou o Sino Analytics.\n\nCruzo preço, infraestrutura e oportunidade em Salvador e Lauro de Freitas.\n\nQual bairro ou endereço você quer analisar?"
-            : "Olá! Sou o Sino Analytics.\n\nPara entregar preço, infraestrutura e oportunidade, preciso de alguns dados.\n\nQual bairro ou endereço você quer analisar?",
-        );
+      if (
+        wantsRanking(text) &&
+        !NEIGHBORHOODS.some((n) =>
+          text.toLowerCase().includes(n.name.toLowerCase()),
+        )
+      ) {
+        const top = rankingHint.slice(0, 5);
+        const reply =
+          top.length > 0
+            ? `Ranking de oportunidade: ${top.map((n, i) => `${i + 1}º ${n}`).join(", ")}. Abra o ranking abaixo ou digite uma região para eu detalhar.`
+            : "Abra o ranking abaixo ou digite uma região para eu analisar.";
+        setMessages((prev) => [
+          ...prev,
+          { id: uid(), role: "sino", text: reply },
+        ]);
         return;
       }
 
-      if (step === "place") {
-        const match = await resolvePlace(text);
-        if (!match) {
-          pushSino(
-            "Ainda não achei esse local. Digite um bairro ou rua em Salvador / Lauro de Freitas, por exemplo Pituba ou Av. Paulo VI.",
-          );
-          return;
-        }
-        lockPlace(match.id, match.name, true);
-        return;
-      }
-
-      if (step === "budget") {
-        const budget = parseBudget(text);
-        if (!budget) {
-          pushSino(
-            "Preciso do orçamento em reais para calcular poder de compra e preço.\n\nPode ser assim: 450 mil, 600000 ou R$ 800.000.",
-          );
-          return;
-        }
-        setIntake((prev) => ({ ...prev, budget }));
-        setStep("profile");
-        pushSino(
-          `Orçamento ${brl.format(budget)} anotado.\n\nAgora me diga: quantos quartos e qual segmento? Moradia ou investimento?`,
-        );
-        return;
-      }
-
-      if (step === "profile") {
-        const { quartos, goal } = parseProfile(text);
-        if (!quartos && !goal) {
-          pushSino(
-            "Quase lá. Me diga os quartos e o segmento.\n\nExemplos: “2 quartos, moradia” ou “investimento, 3q”.",
-          );
-          return;
-        }
-        const next: Intake = {
-          ...intake,
-          quartos: quartos ?? intake.quartos ?? 2,
-          goal: goal ?? intake.goal ?? "morar",
-        };
-        setIntake(next);
-        if (next.regionId) deliverMetrics(next.regionId, next);
+      const match = await resolveFromChat(text);
+      if (match) {
+        const region = getRegionByIdSync(match.id);
+        const reply = region
+          ? `${region.name}: Opportunity Score ${region.score}. ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(region.precoM2)}/m² · valorização +${region.valorizacao12m.toFixed(1)}% em 12 meses. Oferta ${region.oferta.toLowerCase()}. ${region.motivo} Marquei no mapa.`
+          : `Encontrei ${match.name}. Abrindo no mapa.`;
+        setMessages((prev) => [
+          ...prev,
+          { id: uid(), role: "sino", text: reply },
+        ]);
+        onSelectRegion(match.id);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: uid(),
+            role: "sino",
+            text: "Não achei esse local ainda. Tente Pituba, Imbuí, Paralela — ou peça “ranking”.",
+          },
+        ]);
       }
     } finally {
       setBusy(false);
     }
   };
 
-  const pickSuggestion = (item: AddressSuggestion) => {
-    const label = item.street
-      ? `${item.street}, ${item.neighborhoodName}`
-      : item.neighborhoodName;
-    setDraft(label);
-    setSuggestOpen(false);
-    void send(label);
-  };
-
   return (
-    <section className="flex h-full min-h-[min(52vh,480px)] max-h-[min(70vh,640px)] flex-col overflow-hidden rounded-2xl border border-[#e0e7f1] bg-white shadow-[0_8px_28px_rgba(15,40,80,0.08)]">
+    <section className="flex max-h-[min(42vh,340px)] flex-col overflow-hidden rounded-2xl border border-[#e0e7f1] bg-white shadow-[0_8px_28px_rgba(15,40,80,0.08)]">
       <header className="flex shrink-0 items-center gap-3 border-b border-[#eef1f6] bg-gradient-to-r from-[#f7faff] to-white px-3.5 py-2.5">
         <div className="relative shrink-0">
           <div className="rounded-full bg-gradient-to-br from-[#006aff] to-[#00a3ff] p-[2px]">
@@ -427,22 +158,10 @@ export default function OpportunityHero({ onSelectRegion }: Props) {
       </header>
 
       <div className="custom-scrollbar relative min-h-0 flex-1 space-y-2.5 overflow-y-auto bg-[#f8fafc] px-3 py-3">
-        {messages.length === 0 && !busy && (
-          <div className="flex h-full min-h-[160px] flex-col items-center justify-center px-4 text-center">
-            <p className="text-[13px] font-medium text-[#8a96a8]">
-              Digite abaixo para começar
-            </p>
-            <p className="mt-1 text-[11px] leading-snug text-[#a0aab8]">
-              O Sino pede bairro, orçamento e perfil, e devolve preço,
-              infraestrutura e oportunidade.
-            </p>
-          </div>
-        )}
-
         {messages.map((m) =>
           m.role === "user" ? (
             <div key={m.id} className="flex justify-end">
-              <div className="max-w-[88%] whitespace-pre-line rounded-2xl rounded-br-md bg-[#006aff] px-3 py-2 text-[13px] font-medium leading-relaxed text-white shadow-sm">
+              <div className="max-w-[88%] rounded-2xl rounded-br-md bg-[#006aff] px-3 py-2 text-[13px] font-medium leading-relaxed text-white shadow-sm">
                 {m.text}
               </div>
             </div>
@@ -455,16 +174,28 @@ export default function OpportunityHero({ onSelectRegion }: Props) {
                 className="mb-0.5 h-6 w-6 shrink-0 rounded-full bg-white object-cover ring-1 ring-[#dbe7f7]"
               />
               <div className="max-w-[88%] rounded-2xl rounded-bl-md border border-[#e6edf5] bg-white px-3 py-2 shadow-sm">
-                {m.metrics ? (
-                  <MetricsCard m={m.metrics} />
-                ) : (
-                  <p className="whitespace-pre-line text-[13px] leading-relaxed text-[#1e293b]">
-                    {m.text}
-                  </p>
-                )}
+                <p className="text-[13px] leading-relaxed text-[#1e293b]">
+                  {m.text}
+                </p>
               </div>
             </div>
           ),
+        )}
+
+        {messages.length <= 2 && (
+          <div className="flex flex-wrap gap-1.5 pl-8">
+            {chips.map((s) => (
+              <button
+                key={s}
+                type="button"
+                disabled={busy}
+                onClick={() => void send(s)}
+                className="rounded-full border border-[#d7e3f2] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#2a4a6e] transition hover:border-[#006aff] hover:bg-[#e8f1ff] hover:text-[#006aff] disabled:opacity-50"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
         )}
 
         {busy && (
@@ -474,7 +205,7 @@ export default function OpportunityHero({ onSelectRegion }: Props) {
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#006aff] [animation-delay:120ms]" />
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#006aff] [animation-delay:240ms]" />
             </span>
-            Analisando…
+            Analisando região…
           </div>
         )}
         <div ref={bottomRef} />
@@ -489,113 +220,28 @@ export default function OpportunityHero({ onSelectRegion }: Props) {
         className="shrink-0 border-t border-[#eef1f6] bg-white p-2.5"
       >
         <label htmlFor="sino-chat-input" className="sr-only">
-          Converse com o Sino Analytics
+          Mensagem para Sino Analytics
         </label>
-        <div ref={rootRef} className="relative">
-          <div className="group flex min-h-[44px] items-center gap-2 rounded-full border border-[#d7e0ea] bg-[#f8fafc] px-2 py-1 transition focus-within:border-[#006aff] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#006aff]/20">
-            <svg
-              viewBox="0 0 24 24"
-              className="ml-1 h-4 w-4 shrink-0 text-[#8a8a93] group-focus-within:text-[#006aff]"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-3.5-3.5" />
+        <div className="flex items-center gap-2 rounded-full border border-[#d7e0ea] bg-[#f8fafc] px-2 py-1 focus-within:border-[#006aff] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#006aff]/20">
+          <input
+            id="sino-chat-input"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Pergunte ao Sino Analytics…"
+            autoComplete="off"
+            disabled={busy}
+            className="min-w-0 flex-1 bg-transparent px-2 py-1.5 text-sm text-[#1e293b] outline-none placeholder:text-[#94a3b8] disabled:opacity-60"
+          />
+          <button
+            type="submit"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#006aff] text-white shadow-sm hover:bg-[#0058d6] disabled:opacity-40"
+            disabled={!draft.trim() || busy}
+            aria-label="Enviar"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+              <path d="M3.4 20.6 21 12 3.4 3.4 3 10.2 15 12 3 13.8z" />
             </svg>
-            <div className="relative min-w-0 flex-1">
-              {showTyped && (
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 flex items-center px-2 text-sm text-[#94a3b8]"
-                >
-                  {typedPlaceholder}
-                  <span className="ml-px inline-block h-4 w-px animate-pulse bg-[#006aff]/70" />
-                </span>
-              )}
-              <input
-                id="sino-chat-input"
-                role={canSuggest ? "combobox" : undefined}
-                aria-expanded={canSuggest ? showList : undefined}
-                aria-controls={canSuggest ? listId : undefined}
-                aria-autocomplete={canSuggest ? "list" : undefined}
-                value={draft}
-                onChange={(e) => {
-                  setDraft(e.target.value);
-                  if (canSuggest) setSuggestOpen(true);
-                }}
-                onFocus={() => {
-                  if (canSuggest) setSuggestOpen(true);
-                }}
-                onKeyDown={(e) => {
-                  if (!showList) return;
-                  if (e.key === "ArrowDown") {
-                    e.preventDefault();
-                    setActiveIndex((i) =>
-                      Math.min(i + 1, addressHits.length - 1),
-                    );
-                  } else if (e.key === "ArrowUp") {
-                    e.preventDefault();
-                    setActiveIndex((i) => Math.max(i - 1, 0));
-                  } else if (e.key === "Enter" && addressHits[activeIndex]) {
-                    e.preventDefault();
-                    pickSuggestion(addressHits[activeIndex]);
-                  } else if (e.key === "Escape") {
-                    setSuggestOpen(false);
-                  }
-                }}
-                placeholder=""
-                autoComplete="off"
-                disabled={busy}
-                className="relative z-[1] min-w-0 w-full bg-transparent px-2 py-1.5 text-sm text-[#1e293b] outline-none disabled:opacity-60"
-              />
-            </div>
-            <button
-              type="submit"
-              className="shrink-0 rounded-full bg-[#006aff] px-3 py-1.5 text-[11px] font-bold text-white shadow-sm hover:bg-[#0058d6] disabled:opacity-40"
-              disabled={!draft.trim() || busy}
-              aria-label="Enviar"
-            >
-              Enviar
-            </button>
-          </div>
-
-          {showList && (
-            <ul
-              id={listId}
-              role="listbox"
-              className="absolute bottom-[calc(100%+6px)] z-30 max-h-44 w-full overflow-y-auto rounded-xl border border-[#e6edf5] bg-white py-1 shadow-lg"
-            >
-              {addressHits.map((item, idx) => (
-                <li
-                  key={item.id}
-                  role="option"
-                  aria-selected={idx === activeIndex}
-                >
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => pickSuggestion(item)}
-                    className={`flex w-full flex-col px-3 py-2 text-left ${
-                      idx === activeIndex ? "bg-[#e8f1ff]" : "hover:bg-[#f8fafc]"
-                    }`}
-                  >
-                    <span className="text-sm font-semibold text-[#0a1220]">
-                      {item.kind === "rua"
-                        ? item.street
-                        : item.neighborhoodName}
-                    </span>
-                    <span className="text-[11px] text-[#6a7a90]">
-                      {item.kind === "rua"
-                        ? `Rua em ${item.neighborhoodName}`
-                        : "Bairro"}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          </button>
         </div>
       </form>
     </section>

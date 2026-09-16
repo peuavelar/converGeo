@@ -17,9 +17,7 @@ export default function ViewHeatmap({ minHeatmapScore, setMinHeatmapScore, handl
       <div className="bg-purple-50 border border-purple-100 p-4 rounded-xl">
         <span className="text-3xl mb-2 block">🔥</span>
         <h3 className="text-sm font-black text-purple-800 uppercase">Raio-X Ativado</h3>
-        <p className="text-[11px] text-purple-600 mt-2 font-medium">
-          Hexágonos H3 (Uber) com scores reais do banco ConverGeo.
-        </p>
+        <p className="text-[11px] text-purple-600 mt-2 font-medium">Renderizando os 300 melhores pontos para o seu negócio em 3D.</p>
         <div className="mt-4 pt-3 border-t border-purple-200/50">
           <label className="text-[10px] font-bold text-purple-700 flex justify-between mb-1">
             <span>Filtro de Nota Mínima:</span>

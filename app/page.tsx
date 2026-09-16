@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import DeckGL from "@deck.gl/react";
+import { FlyToInterpolator } from "@deck.gl/core";
 import { Map } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -10,6 +11,7 @@ import {
   type AppMode,
   type ImovelTool,
   type PropertyType,
+  defaultPropertyType,
   findNearestNeighborhood,
 } from "./utils/realEstate";
 import { type Neighborhood } from "./data/neighborhoods";
@@ -79,7 +81,7 @@ import {
   type MarketplaceListing,
 } from "./data/marketplaceListings";
 export default function App() {
-  const [appMode] = useState<AppMode>("negocio");
+  const [appMode, setAppMode] = useState<AppMode>("imovel");
   const [imovelTool, setImovelTool] = useState<ImovelTool>("orcamento");
   const [, setActiveNeighborhood] = useState<Neighborhood | null>(null);
   const [activeRegionId, setActiveRegionId] = useState<string | null>(null);
@@ -92,7 +94,7 @@ export default function App() {
     useState<AdvancedFilters>(ADVANCED_FILTER_OPEN);
   const [searchTrigger] = useState(0);
   const [propertyType, setPropertyType] =
-    useState<PropertyType>("ponto_comercial");
+    useState<PropertyType>("apartamento");
 
   const [regionSheetOpen, setRegionSheetOpen] = useState(false);
   const [frequentPlaces, setFrequentPlaces] = useState<FrequentPlace[]>([]);
@@ -179,7 +181,7 @@ export default function App() {
   const { viewState, setViewState, flyTo, flyToMid } = useMapCamera(appMode);
   const [viewMode, setViewMode] = useState<
     "single" | "top" | "compare" | "heatmap" | null
-  >("heatmap");
+  >(null);
   const [lastCoordinate, setLastCoordinate] = useState<LatLng | null>(null);
   const [compareLocations, setCompareLocations] = useState<
     CompareRegionPoint[]
@@ -626,31 +628,6 @@ export default function App() {
         />
       </div>
 
-      {appMode === "negocio" && (
-        <div className="pointer-events-none absolute bottom-3 left-3 z-20 max-w-[220px] rounded-xl border border-[#d1d1d5] bg-white/95 px-3 py-2 shadow-md backdrop-blur-sm">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[#6a6a72]">
-            Mapa H3 Uber
-          </p>
-          <p className="mt-0.5 text-[11px] font-semibold text-[#0a0a0b]">
-            Scores reais do banco ConverGeo
-          </p>
-          <div className="mt-1.5 flex items-center gap-2 text-[10px] font-semibold">
-            <span className="inline-flex items-center gap-1 text-emerald-600">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Alta
-            </span>
-            <span className="inline-flex items-center gap-1 text-amber-600">
-              <span className="h-2 w-2 rounded-full bg-amber-500" />
-              Média
-            </span>
-            <span className="inline-flex items-center gap-1 text-rose-600">
-              <span className="h-2 w-2 rounded-full bg-rose-500" />
-              Baixa
-            </span>
-          </div>
-        </div>
-      )}
-
       {showPinCard && nearbyCenter && (
         <MapPinListingsCard
           lat={nearbyCenter.lat}
@@ -747,8 +724,52 @@ export default function App() {
     setMobilePane("map");
   };
 
-  const switchAppMode = (_mode: AppMode) => {
-    // MVP: somente Abrir meu Negócio. Comprar/imobiliária desativados.
+  const switchAppMode = (mode: AppMode) => {
+    if (mode === appMode || modeTransitionTo) return;
+
+    if (modeTransitionTimer.current) {
+      clearTimeout(modeTransitionTimer.current);
+    }
+
+    setModeTransitionExiting(false);
+    setModeTransitionTo(mode);
+
+    // Deixa o véu pintar antes de trocar camadas / câmera
+    requestAnimationFrame(() => {
+      setAppMode(mode);
+      setPropertyType(defaultPropertyType(mode));
+      setSearchError("");
+      setMobilePane("content");
+      setViewState((vs) =>
+        mode === "negocio"
+          ? {
+              ...vs,
+              longitude: -38.4,
+              latitude: -12.92,
+              zoom: 11.1,
+              pitch: 35,
+              transitionDuration: 900,
+              transitionInterpolator: new FlyToInterpolator(),
+            }
+          : {
+              ...vs,
+              pitch: 0,
+              zoom: Math.max(vs.zoom ?? 12, 12),
+              transitionDuration: 600,
+              transitionInterpolator: new FlyToInterpolator(),
+            },
+      );
+    });
+
+    const holdMs = mode === "negocio" ? 1050 : 780;
+    modeTransitionTimer.current = setTimeout(() => {
+      setModeTransitionExiting(true);
+      modeTransitionTimer.current = setTimeout(() => {
+        setModeTransitionTo(null);
+        setModeTransitionExiting(false);
+        modeTransitionTimer.current = null;
+      }, 280);
+    }, holdMs);
   };
 
   const panelWidthClass =

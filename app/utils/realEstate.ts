@@ -70,6 +70,11 @@ export const COMMERCIAL_PROPERTY_TYPES: PropertyTypeOption[] = [
     category: "comercial",
   },
   {
+    value: "imovel_comercial",
+    label: "Imóvel Comercial",
+    category: "comercial",
+  },
+  {
     value: "lote_terreno_comercial",
     label: "Lote/Terreno",
     category: "comercial",

@@ -200,11 +200,11 @@ export function buildNegocioLayers(o: NegocioLayerOpts) {
       data: o.visibleHexData,
       pickable: true,
       extruded: true,
-      elevationScale: 70,
+      elevationScale: 50,
       stroked: true,
       filled: true,
       lineWidthMinPixels: 1,
-      coverage: 0.92,
+      coverage: 0.95,
       getHexagon: (d: any) => d.h3_index,
       getElevation: (d: any) => score(d) * 10,
       getFillColor: (d: any) => {
