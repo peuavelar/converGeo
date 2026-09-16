@@ -87,12 +87,12 @@ export default function ZillowTopNav({
       </nav>
 
       <div className="flex shrink-0 items-center justify-end gap-1 justify-self-end md:gap-1.5">
-        <button
-          type="button"
+        <a
+          href="/anuncie"
           className="hidden rounded-full px-2.5 py-1 text-xs font-medium text-[#3a3a42] hover:bg-[#f4f4f5] hover:text-[#0a0a0b] md:inline-flex"
         >
-          Ajuda
-        </button>
+          Anuncie
+        </a>
         <button
           type="button"
           className="rounded-full bg-[#0a0a0b] px-2.5 py-1 text-[10px] font-semibold text-white transition hover:bg-[#1c1c1f] active:scale-[0.98] md:px-3 md:py-1 md:text-xs"

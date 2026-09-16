@@ -1,2 +1,0 @@
-[console_scripts]
-convergeo-engine = convergeo_engine.cli:main

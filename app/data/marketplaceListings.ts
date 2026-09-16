@@ -1,6 +1,8 @@
 import { REGIONS } from "./regions.mock";
 import { neighborhoodPhoto } from "./neighborhoodPhotos";
 
+import type { FairPriceSeal } from "../services/marketplaceApi";
+
 export type MarketplaceListing = {
   id: string;
   regionId: string;
@@ -16,6 +18,7 @@ export type MarketplaceListing = {
   score: number;
   valorizacao12m: number;
   photo: string;
+  precoJusto?: FairPriceSeal | null;
 };
 
 function formatMapPrice(n: number): string {

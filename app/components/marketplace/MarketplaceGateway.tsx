@@ -6,6 +6,12 @@ import {
   marketplacePriceFull,
   type MarketplaceListing,
 } from "../../data/marketplaceListings";
+import {
+  apiListingToMarketplace,
+  fetchMarketplaceListings,
+  marketplaceSource,
+  type BuyerScoreProfile,
+} from "../../services/marketplaceApi";
 import { NEIGHBORHOODS } from "../../data/neighborhoods";
 import { getRegionByIdSync } from "../../services/regionsApi";
 import { FiltroPill, type AdvancedFilters } from "../zillow/FiltroSheet";
@@ -56,6 +62,7 @@ type PanelProps = {
   regionFilterId?: string | null;
   regionFilterLabel?: string | null;
   onClearRegionFilter?: () => void;
+  scoreProfile?: BuyerScoreProfile;
 };
 
 /** Heurísticas mock para suítes / vagas a partir do anúncio. */
@@ -106,12 +113,31 @@ export default function MarketplaceListPanel({
   regionFilterId = null,
   regionFilterLabel = null,
   onClearRegionFilter,
+  scoreProfile = "moradia",
 }: PanelProps) {
   const [filter, setFilter] = useState<"todos" | "alto" | "medio">("todos");
   const [query, setQuery] = useState("");
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const focusedRef = useRef<HTMLDivElement | null>(null);
   const { enabled: benchEnabled, byId: scoreById } = useMarketplaceScores();
+  const [apiPool, setApiPool] = useState<MarketplaceListing[] | null>(null);
+
+  useEffect(() => {
+    if (marketplaceSource() !== "api") return;
+    let cancelled = false;
+    fetchMarketplaceListings({ finalidade: "venda", perfil: scoreProfile })
+      .then((rows) => {
+        if (!cancelled) setApiPool(rows.map(apiListingToMarketplace));
+      })
+      .catch(() => {
+        if (!cancelled) setApiPool(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [scoreProfile]);
+
+  const catalog = apiPool ?? MARKETPLACE_LISTINGS;
 
   useEffect(() => {
     if (regionFilterLabel) {
@@ -122,14 +148,14 @@ export default function MarketplaceListPanel({
 
   const { listings, filterRelaxed } = useMemo(() => {
     // Custo-benefício: com flag, usa percentil real; sem flag, heurística antiga por score.
-    let pool = MARKETPLACE_LISTINGS;
+    let pool = catalog;
     if (filter === "alto") {
-      pool = MARKETPLACE_LISTINGS.filter((l) => {
+      pool = catalog.filter((l) => {
         const s = displayOppScore(l.id, l.score, scoreById);
         return s >= 80;
       });
     } else if (filter === "medio") {
-      pool = MARKETPLACE_LISTINGS.filter((l) => {
+      pool = catalog.filter((l) => {
         if (benchEnabled && scoreById[l.id]?.benchmarkAvailable) {
           const pct = scoreById[l.id].pricePositionPercentile;
           return pct != null && pct <= 45;
@@ -187,7 +213,7 @@ export default function MarketplaceListPanel({
     });
 
     if (focusedId) {
-      const focused = MARKETPLACE_LISTINGS.find((l) => l.id === focusedId);
+      const focused = catalog.find((l) => l.id === focusedId);
       if (focused) {
         const rest = result.filter((l) => l.id !== focusedId);
         if (result.some((l) => l.id === focusedId) || !q) {
@@ -207,10 +233,11 @@ export default function MarketplaceListPanel({
     regionFilterId,
     scoreById,
     benchEnabled,
+    catalog,
   ]);
 
   const focusedListing =
-    MARKETPLACE_LISTINGS.find((l) => l.id === focusedId) ?? null;
+    catalog.find((l) => l.id === focusedId) ?? null;
 
   useEffect(() => {
     if (!focusListingId) return;

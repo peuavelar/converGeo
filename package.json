@@ -1,6 +1,6 @@
 {
   "name": "convergeo-web",
-  "version": "1.2.0",
+    "version": "1.3.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,7 +10,8 @@
     "deploy": "vercel --prod",
     "seed:benchmarks": "tsx scripts/seed-benchmarks.ts",
     "compare:scores": "tsx scripts/compare-opportunity-scores.ts",
-    "test:benchmarks": "tsx --test lib/benchmarks/rules/rules.test.ts lib/benchmarks/calibrate.test.ts"
+    "test:benchmarks": "tsx --test lib/benchmarks/rules/rules.test.ts lib/benchmarks/calibrate.test.ts",
+    "engine:test": "python3 -m pytest engine/tests -q"
   },
   "dependencies": {
     "@deck.gl/core": "^9.3.6",

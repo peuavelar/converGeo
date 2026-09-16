@@ -61,6 +61,7 @@ import ZillowSideRail, {
 } from "./components/zillow/ZillowSideRail";
 import type { FrequentPlace, LatLng, RouteLeg } from "./services/routing";
 import type { NearbyPlace } from "./services/nearbyPlaces";
+import type { BuyerScoreProfile } from "./services/marketplaceApi";
 import {
   findNearestRegion,
   getRegionByIdSync,
@@ -192,6 +193,8 @@ export default function App() {
   const [searchError, setSearchError] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [colorMode, setColorMode] = useState<"total" | "ocean">("total");
+  const [scoreProfile, setScoreProfile] =
+    useState<BuyerScoreProfile>("moradia");
   const [minHeatmapScore, setMinHeatmapScore] = useState(0);
   const [copied, setCopied] = useState(false);
   const [weightDemografia, setWeightDemografia] = useState(35);
@@ -815,6 +818,8 @@ export default function App() {
             void handleAddressSearch(e);
           }}
           isSearching={isSearching}
+          profile={scoreProfile}
+          setProfile={setScoreProfile}
         />
       )}
 
@@ -914,6 +919,7 @@ export default function App() {
                     : null
                 }
                 onClearRegionFilter={() => setMarketplaceRegionId(null)}
+                scoreProfile={scoreProfile}
               />
             ) : appMode === "imovel" && sideRailTab === "favoritos" ? (
               <SideRailPlaceholder
@@ -1138,6 +1144,7 @@ export default function App() {
           listing={detail}
           nearbyPlaces={nearbyPlaces}
           nearbyLoading={nearbyLoading}
+          scoreProfile={scoreProfile}
           onClose={() => {
             setDetailListingId(null);
             setHoveredPoi(null);

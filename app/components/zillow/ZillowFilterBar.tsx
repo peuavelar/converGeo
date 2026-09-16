@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useTypewriterPlaceholder } from "../../hooks/useTypewriterPlaceholder";
 import type { ImovelTool } from "../../utils/realEstate";
+import type { BuyerScoreProfile } from "../../services/marketplaceApi";
 import {
   FiltroPill,
   type AdvancedFilters,
@@ -25,6 +26,8 @@ type Props = {
   setSearchQuery: (v: string) => void;
   onSearch: (e: FormEvent) => void;
   isSearching: boolean;
+  profile?: BuyerScoreProfile;
+  setProfile?: (p: BuyerScoreProfile) => void;
 };
 
 export default function ZillowFilterBar({
@@ -36,6 +39,8 @@ export default function ZillowFilterBar({
   setSearchQuery,
   onSearch,
   isSearching,
+  profile = "moradia",
+  setProfile,
 }: Props) {
   const typedPlaceholder = useTypewriterPlaceholder(
     "Busque um endereço",
@@ -126,7 +131,23 @@ export default function ZillowFilterBar({
           </button>
         </div>
 
-        <div className="hidden shrink-0 md:block">
+        <div className="hidden shrink-0 md:flex md:items-center md:gap-2">
+          {setProfile && (
+            <label className="flex items-center gap-1 text-[10px] font-semibold text-[#6a6a72]">
+              Perfil
+              <select
+                value={profile}
+                onChange={(e) =>
+                  setProfile(e.target.value as BuyerScoreProfile)
+                }
+                className="rounded-md border border-[#d1d1d5] bg-white px-1.5 py-1 text-[11px] font-bold text-[#0a0a0b]"
+              >
+                <option value="moradia">Moradia</option>
+                <option value="investidor">Investidor</option>
+                <option value="incorporadora">Incorporadora</option>
+              </select>
+            </label>
+          )}
           <FiltroPill value={filters} onChange={setFilters} compact label="Filtro" />
         </div>
       </form>

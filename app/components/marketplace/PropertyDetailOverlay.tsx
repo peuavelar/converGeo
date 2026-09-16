@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { MarketplaceListing } from "../../data/marketplaceListings";
 import { marketplacePriceFull } from "../../data/marketplaceListings";
 import { neighborhoodPhoto } from "../../data/neighborhoodPhotos";
@@ -11,6 +11,10 @@ import {
   useMarketplaceScores,
 } from "../../hooks/useMarketplaceScores";
 import { NearbyCategoryIcon } from "../map/NearbyCategoryIcon";
+import {
+  fetchRegionScoreV2,
+  type BuyerScoreProfile,
+} from "../../services/marketplaceApi";
 import {
   NEARBY_CATEGORY_META,
   formatDistance,
@@ -23,6 +27,7 @@ type Props = {
   onAskSino?: (question: string) => void;
   nearbyPlaces?: NearbyPlace[];
   nearbyLoading?: boolean;
+  scoreProfile?: BuyerScoreProfile;
 };
 
 const EXTRA_PHOTOS = [
@@ -47,13 +52,33 @@ export default function PropertyDetailOverlay({
   onAskSino,
   nearbyPlaces = [],
   nearbyLoading = false,
+  scoreProfile = "moradia",
 }: Props) {
   const [photoIdx, setPhotoIdx] = useState(0);
   const [tab, setTab] = useState<(typeof GALLERY_TABS)[number]>("Fotos");
   const [ask, setAsk] = useState("");
+  const [v2Score, setV2Score] = useState<{
+    scoreTotal: number | null;
+    cobertura: Record<string, boolean>;
+    breakdown: Record<string, number | null>;
+  } | null>(null);
   const { byId: scoreById } = useMarketplaceScores();
   const scoreView = scoreById[listing.id];
   const opp = displayOppScore(listing.id, listing.score, scoreById);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchRegionScoreV2({
+      lat: listing.lat,
+      lng: listing.lng,
+      perfil: scoreProfile,
+    }).then((row) => {
+      if (!cancelled) setV2Score(row);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [listing.lat, listing.lng, scoreProfile]);
 
   const neighborhood =
     NEIGHBORHOODS.find((n) => n.id === listing.regionId)?.name ||
@@ -172,6 +197,47 @@ export default function PropertyDetailOverlay({
               <p className="text-3xl font-bold tabular-nums text-[#2a2a33]">
                 {marketplacePriceFull(listing.price)}
               </p>
+              {listing.precoJusto?.faixa && (
+                <p className="mt-1 text-xs font-bold">
+                  <span
+                    className={
+                      listing.precoJusto.faixa === "abaixo"
+                        ? "text-emerald-600"
+                        : listing.precoJusto.faixa === "acima"
+                          ? "text-rose-600"
+                          : "text-[#006aff]"
+                    }
+                  >
+                    Preço {listing.precoJusto.faixa}
+                    {listing.precoJusto.desvioPct != null
+                      ? ` (${Math.round(listing.precoJusto.desvioPct * 100)}%)`
+                      : ""}
+                  </span>
+                  {listing.precoJusto.confianca != null && (
+                    <span className="ml-2 font-medium text-[#8a8a93]">
+                      confiança {Math.round(listing.precoJusto.confianca * 100)}%
+                    </span>
+                  )}
+                </p>
+              )}
+              {v2Score && (
+                <div className="mt-2 rounded-lg bg-[#f5f5f7] px-2 py-1.5 text-[11px] text-[#2a2a33]">
+                  <p className="font-bold">
+                    Score região ({scoreProfile}):{" "}
+                    {v2Score.scoreTotal != null
+                      ? v2Score.scoreTotal.toFixed(1)
+                      : "sem dado"}
+                  </p>
+                  <p className="mt-0.5 text-[#6a6a72]">
+                    {Object.entries(v2Score.breakdown)
+                      .map(
+                        ([k, v]) =>
+                          `${k}: ${v == null ? "n/d" : v.toFixed(1)}${v2Score.cobertura[k] ? "" : " (sem cobertura)"}`,
+                      )
+                      .join(" · ")}
+                  </p>
+                </div>
+              )}
               <p className="mt-1 text-sm font-semibold text-[#2a2a33]">
                 {address}
               </p>

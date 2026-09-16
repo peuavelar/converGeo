@@ -1,4 +1,4 @@
-/** Tipos alinhados à futura API Java/Spring Boot. */
+/** Tipos alinhados ao motor FastAPI em `engine/` (v1 negócio + v2 marketplace). */
 
 export type OpportunityBand =
   | "muito_alta"
