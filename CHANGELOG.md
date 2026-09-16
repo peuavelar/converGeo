@@ -11,6 +11,7 @@ Versionamento: [SemVer](https://semver.org/lang/pt-BR/).
 - Motor Python em `engine/` (ETL H3 mascarado, IBGE com renda real, CNPJ geocodificado, OSM, API v1+v2)
 - Marketplace: schema, CSV/VRSync, preço justo, página **Anuncie**
 - Flag `NEXT_PUBLIC_MARKETPLACE_SOURCE=mock|api` (padrão mock)
+- Front de produção: sem source maps, `/api/health` sem origem interna, cron exige `CRON_SECRET` na Vercel
 - ADRs em `docs/adr/` e `docs/PITCH_NUMEROS.md`
 
 ### Changed

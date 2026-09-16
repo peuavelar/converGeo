@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
-
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -16,9 +15,18 @@ from convergeo_engine.store import get_store
 settings = get_settings()
 
 
+def allow_demo_seed() -> bool:
+    if settings.database_url:
+        return False
+    if os.environ.get("RENDER") or os.environ.get("K_SERVICE"):
+        return False
+    flag = os.environ.get("ENGINE_SEED_DEMO", "1").strip().lower()
+    return flag not in {"0", "false", "no"}
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    if not settings.database_url:
+    if allow_demo_seed():
         seed_demo()
     yield
 
@@ -45,16 +53,18 @@ app.include_router(v2_router)
 @app.get("/health")
 def health():
     store = get_store()
-    return {
+    body: dict = {
         "status": "ok",
         "version": "1.3.0",
         "database": bool(settings.database_url),
         "schema": settings.db_schema,
-        "demo": not bool(settings.database_url),
-        "hexagonos": len(store.hexagonos),
-        "scores": len(store.scores),
-        "imoveis": len(store.imoveis),
     }
+    if allow_demo_seed():
+        body["demo"] = True
+        body["hexagonos"] = len(store.hexagonos)
+        body["scores"] = len(store.scores)
+        body["imoveis"] = len(store.imoveis)
+    return body
 
 
 def migrate() -> list[str]:

@@ -12,6 +12,10 @@ export const maxDuration = 60;
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET?.trim();
   const auth = request.headers.get("authorization") || "";
+  const onVercel = process.env.VERCEL === "1";
+  if (!secret && onVercel) {
+    return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+  }
   if (secret && auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   }

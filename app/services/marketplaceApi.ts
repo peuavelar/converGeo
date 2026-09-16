@@ -28,7 +28,11 @@ export type ApiMarketplaceListing = {
 };
 
 function apiBase(): string {
-  return (process.env.NEXT_PUBLIC_API_URL || "/backend").replace(/\/$/, "");
+  const raw = (process.env.NEXT_PUBLIC_API_URL || "/backend").replace(/\/$/, "");
+  if (/localhost|127\.0\.0\.1|0\.0\.0\.0/i.test(raw)) {
+    return "/backend";
+  }
+  return raw;
 }
 
 export function marketplaceSource(): MarketplaceSource {

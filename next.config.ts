@@ -64,15 +64,21 @@ const nextConfig: NextConfig = {
   },
 
   async rewrites() {
-    const api = (
+    const fallback = "https://convergeo.onrender.com";
+    let api = (
       process.env.BACKEND_ORIGIN ||
       process.env.NEXT_PUBLIC_API_URL ||
-      "https://convergeo.onrender.com"
+      fallback
     ).replace(/\/$/, "");
 
-    const destinationBase = api.startsWith("http")
-      ? api
-      : "https://convergeo.onrender.com";
+    const isPrivate =
+      !api.startsWith("http") ||
+      /localhost|127\.0\.0\.1|0\.0\.0\.0|::1/i.test(api);
+    if (process.env.VERCEL && isPrivate) {
+      api = fallback;
+    }
+
+    const destinationBase = api.startsWith("http") ? api : fallback;
 
     return [
       {

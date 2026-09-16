@@ -6,7 +6,7 @@ import { useState } from "react";
 export default function AnunciePage() {
   const [msg, setMsg] = useState("");
   const [feedUrl, setFeedUrl] = useState("");
-  const [anuncianteId, setAnuncianteId] = useState("imobiliaria-demo");
+  const [anuncianteId, setAnuncianteId] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -16,7 +16,7 @@ export default function AnunciePage() {
       const body = new FormData();
       body.append("file", file);
       const res = await fetch(
-        `/backend/v2/ingest/planilha?anunciante_id=${encodeURIComponent(anuncianteId)}`,
+        `/backend/v2/ingest/planilha?anunciante_id=${encodeURIComponent(anuncianteId || "anunciante")}`,
         {
           method: "POST",
           headers: apiKey ? { "X-API-Key": apiKey } : undefined,
@@ -26,7 +26,7 @@ export default function AnunciePage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setMsg(
-          `Motor indisponível ou recusou o envio (${res.status}). Rode o engine local ou use o CLI.`,
+          `Motor indisponível ou recusou o envio (${res.status}).`,
         );
         return;
       }
@@ -34,7 +34,7 @@ export default function AnunciePage() {
         `Ingestão ok: ${data.created ?? 0} criados, ${data.updated ?? 0} atualizados, ${data.errors?.length ?? 0} erros de linha.`,
       );
     } catch {
-      setMsg("Não foi possível falar com o motor. Confira BACKEND_ORIGIN e `cli serve`.");
+      setMsg("Não foi possível falar com o motor.");
     } finally {
       setBusy(false);
     }
@@ -54,20 +54,20 @@ export default function AnunciePage() {
           ...(apiKey ? { "X-API-Key": apiKey } : {}),
         },
         body: JSON.stringify({
-          id: anuncianteId,
+          id: anuncianteId || undefined,
           tipo: "imobiliaria",
-          nome: anuncianteId,
+          nome: anuncianteId || "anunciante",
           feed_url: feedUrl,
           feed_formato: "vrsync",
         }),
       });
       if (!res.ok) {
-        setMsg(`Cadastro recusado (${res.status}). URL guardada localmente: ${feedUrl}`);
+        setMsg(`Cadastro recusado (${res.status}).`);
         return;
       }
-      setMsg(`Anunciante cadastrado. Feed: ${feedUrl}`);
+      setMsg("Feed cadastrado.");
     } catch {
-      setMsg(`Feed anotado: ${feedUrl} (motor offline)`);
+      setMsg("Não foi possível cadastrar o feed.");
     } finally {
       setBusy(false);
     }
@@ -102,6 +102,7 @@ export default function AnunciePage() {
           <input
             value={anuncianteId}
             onChange={(e) => setAnuncianteId(e.target.value)}
+            placeholder="id da imobiliária"
             className="mt-1 w-full rounded-xl border border-[#e6e6ea] px-3 py-2 text-sm font-normal text-[#0a0a0b]"
           />
         </label>

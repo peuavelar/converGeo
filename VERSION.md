@@ -12,5 +12,7 @@
 - ADRs metodológicos em `docs/adr/`
 
 ## Produção
-- Front: Vercel (`convergeo-front`)
+- Front: Vercel (`convergeo-front`) — só o Next.js; `engine/` não sobe na Vercel
 - Motor: Render / Docker (`engine/Dockerfile`) + Supabase PostGIS
+- Marketplace em produção: mock até `NEXT_PUBLIC_MARKETPLACE_SOURCE=api` no painel (nunca localhost)
+- Sem source maps no browser; `/api/health` não expõe origem do motor
