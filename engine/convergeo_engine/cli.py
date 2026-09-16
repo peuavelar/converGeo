@@ -14,6 +14,7 @@ from convergeo_engine.etl.osm import run_osm
 from convergeo_engine.marketplace.aggregate import aggregate
 from convergeo_engine.marketplace.ingest import ingest_csv, ingest_vrsync
 from convergeo_engine.scoring.compute import compute_scores_v2
+from convergeo_engine.seed_demo import seed_demo
 from convergeo_engine.store import get_store
 
 
@@ -60,6 +61,7 @@ def main(argv: list[str] | None = None) -> int:
     mkt.add_argument("--anunciante", default="seed")
     scoring = sub.add_parser("scoring")
     scoring.add_argument("step", choices=["compute", "validate"])
+    sub.add_parser("seed-demo")
     sub.add_parser("serve")
 
     args = parser.parse_args(argv)
@@ -121,6 +123,9 @@ def main(argv: list[str] | None = None) -> int:
                 encoding="utf-8",
             )
         print(path)
+        return 0
+    if args.cmd == "seed-demo":
+        print(json.dumps(seed_demo(store), ensure_ascii=False))
         return 0
     if args.cmd == "serve":
         import uvicorn

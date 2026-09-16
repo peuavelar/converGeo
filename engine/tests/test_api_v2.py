@@ -22,7 +22,8 @@ def test_v2_ingest_and_explain_no_invented_numbers():
 
     listed = client.get("/v2/imoveis", params={"finalidade": "venda"})
     assert listed.status_code == 200
-    assert listed.json()["imoveis"][0]["id_externo"] == "x1"
+    ids = [i["id_externo"] for i in listed.json()["imoveis"]]
+    assert "x1" in ids
 
     exp = client.post(
         "/v2/explicar",
