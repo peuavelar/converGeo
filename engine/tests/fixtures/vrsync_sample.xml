@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListingDataFeed xmlns="http://www.vivareal.com/schemas/1.0/VRSync"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                 xsi:schemaLocation="http://www.vivareal.com/schemas/1.0/VRSync http://xml.vivareal.com/vrsync.xsd">
+  <Header>
+    <Provider>ConverGeo Fixture</Provider>
+    <Email>dev@example.com</Email>
+    <ContactName>QA</ContactName>
+    <PublishDate>2026-09-16T10:00:00</PublishDate>
+  </Header>
+  <Listings>
+    <Listing>
+      <ListingID>vr-100</ListingID>
+      <Title><![CDATA[Apartamento 2 quartos na Pituba]]></Title>
+      <TransactionType>For Sale</TransactionType>
+      <Details>
+        <PropertyType>Residential / Apartment</PropertyType>
+        <ListPrice currency="BRL">600000</ListPrice>
+        <LivingArea unit="square metres">70</LivingArea>
+        <Bedrooms>2</Bedrooms>
+        <Bathrooms>2</Bathrooms>
+        <Garage>1</Garage>
+        <Description><![CDATA[Imóvel de fixture VRSync]]></Description>
+      </Details>
+      <Location displayAddress="All">
+        <City>Salvador</City>
+        <Neighborhood>Pituba</Neighborhood>
+        <Address>Rua Ceará</Address>
+        <PostalCode>41810-000</PostalCode>
+        <Latitude>-13.0058</Latitude>
+        <Longitude>-38.4601</Longitude>
+      </Location>
+      <Media>
+        <Item medium="image">https://example.com/foto1.jpg</Item>
+      </Media>
+    </Listing>
+  </Listings>
+</ListingDataFeed>

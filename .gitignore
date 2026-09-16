@@ -17,6 +17,12 @@
 /.next/
 /out/
 
+# python engine
+engine/.venv/
+engine/**/__pycache__/
+__pycache__/
+*.pyc
+
 # production
 /build
 
@@ -33,6 +39,7 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
+!engine/.env.example
 
 # vercel
 .vercel

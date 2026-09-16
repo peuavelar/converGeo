@@ -1,0 +1,17 @@
+id_externo,finalidade,tipo,preco,condominio,iptu,area_util,area_total,quartos,suites,banheiros,vagas,ano_construcao,endereco_logradouro,endereco_numero,endereco_bairro,endereco_cidade,cep,lat,lng,ocultar_endereco,descricao,fotos,status
+mkt-pituba-1,venda,apartamento,589000,800,150,68,68,2,1,2,1,2018,Rua da Pituba,100,Pituba,Salvador,41810-000,-13.0018,-38.4631,false,Apto 2q Pituba,,ativo
+mkt-pituba-2,venda,apartamento,1100000,1200,280,120,120,3,2,3,2,2015,Rua da Pituba,200,Pituba,Salvador,41810-000,-13.0108,-38.4541,false,Cobertura Pituba,,ativo
+mkt-barra-1,venda,apartamento,1774000,1500,400,145,145,3,2,3,2,2012,Av Oceânica,50,Barra,Salvador,40140-000,-13.0075,-38.5289,false,Vista mar Barra,,ativo
+mkt-barra-2,venda,studio,760000,600,90,42,42,1,0,1,0,2019,Rua Recife,10,Barra,Salvador,40140-000,-13.0165,-38.5349,false,Studio Barra,,ativo
+mkt-imibui-1,venda,apartamento,876000,700,160,92,92,3,1,2,1,2020,Av Pinto de Aguiar,80,Imbuí,Salvador,41720-000,-12.9328,-38.4235,false,Apto novo Imbuí,,ativo
+mkt-imibui-2,venda,casa,590000,0,120,78,120,2,1,2,1,2010,Rua São Paulo,12,Imbuí,Salvador,41720-000,-12.9418,-38.4315,false,Casa Imbuí,,ativo
+mkt-paralela-1,venda,apartamento,1364000,900,220,110,110,3,2,3,2,2022,Av Luís Viana,1,Paralela,Salvador,41745-000,-12.9165,-38.4168,false,Lançamento Paralela,,ativo
+mkt-paralela-2,venda,apartamento,712000,650,140,70,70,2,1,2,1,2017,Av Luís Viana,2,Paralela,Salvador,41745-000,-12.9255,-38.4058,false,Apto 2q Paralela,,ativo
+mkt-itapua-1,venda,apartamento,964000,500,130,98,98,3,1,2,1,2014,Av Dorival Caymmi,9,Itapuã,Salvador,41680-000,-12.9416,-38.3571,false,Perto da praia Itapuã,,ativo
+mkt-itapua-2,venda,casa,912000,0,110,105,180,3,1,2,2,2008,Rua Praia de Itapuã,4,Itapuã,Salvador,41680-000,-12.9506,-38.3651,false,Casa térrea Itapuã,,ativo
+mkt-horto-1,venda,apartamento,757000,550,100,75,75,2,1,2,1,2016,Rua do Horto,7,Horto Florestal,Salvador,40295-000,-12.9955,-38.4882,false,Apto verde Horto,,ativo
+mkt-itaigara-1,venda,apartamento,845000,700,140,80,80,2,1,2,1,2011,Av ACM,30,Itaigara,Salvador,41825-000,-12.9982,-38.4618,false,Apto Itaigara,,ativo
+mkt-rv-1,venda,apartamento,698000,480,90,62,62,2,0,1,1,2009,Rua da Paciência,5,Rio Vermelho,Salvador,41950-000,-13.0098,-38.4865,false,Apto Rio Vermelho,,ativo
+mkt-cda-1,venda,apartamento,1290000,1100,260,130,130,3,2,3,2,2013,Av Tancredo Neves,100,Caminho das Árvores,Salvador,41820-000,-12.9764,-38.4609,false,Alto padrão,,ativo
+mkt-stella-1,venda,casa,820000,0,150,110,200,3,1,2,2,2015,Rua Stella Maris,8,Stella Maris,Salvador,41600-000,-12.9351,-38.3264,false,Casa Stella Maris,,ativo
+mkt-pat-1,venda,apartamento,548000,400,80,70,70,2,1,2,1,2018,Av Pinto de Aguiar,22,Patamares,Salvador,41680-000,-12.9416,-38.3932,false,Apto Patamares,,ativo

@@ -1,0 +1,29 @@
+# Motor ConverGeo
+
+Python 3.11+ · FastAPI · H3 · shapely.
+
+```bash
+cd engine
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+cp .env.example .env
+pytest
+python -m convergeo_engine.cli migrate
+python -m convergeo_engine.cli serve   # http://127.0.0.1:8000
+```
+
+ETL (caminhos oficiais via env, sem zips versionados):
+
+```bash
+export IBGE_MALHA_PATH=/dados/malha.geojson
+export IBGE_SETORES_PATH=/dados/setores.geojson
+export IBGE_RENDA_PATH=/dados/renda.csv
+export RF_CNPJ_DIR=/dados/cnpj
+export RF_MUNICIPIOS_CSV=/dados/municipios.csv
+python -m convergeo_engine.cli etl all
+```
+
+Deploy: o frontend Vercel continua igual. O motor sobe no **Render** (serviço Web, Docker ou `uvicorn`), com `DATABASE_URL` do Supabase (Postgres + PostGIS). Health: `GET /health`.
+
+Contrato legado do modo Negócio: `GET /score` e `GET /top` (v1). Marketplace: `/v2/*` atrás de `NEXT_PUBLIC_MARKETPLACE_SOURCE`.

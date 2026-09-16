@@ -1,0 +1,43 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "setor_id": "S1",
+        "populacao": 1000,
+        "domicilios": 400,
+        "renda_media": 3500
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-38.52, -13.02],
+          [-38.50, -13.02],
+          [-38.50, -13.00],
+          [-38.52, -13.00],
+          [-38.52, -13.02]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "setor_id": "S2",
+        "populacao": 500,
+        "domicilios": 200,
+        "renda_media": 1800
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-38.50, -13.02],
+          [-38.48, -13.02],
+          [-38.48, -13.00],
+          [-38.50, -13.00],
+          [-38.50, -13.02]
+        ]]
+      }
+    }
+  ]
+}

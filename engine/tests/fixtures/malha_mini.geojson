@@ -1,0 +1,33 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "CD_MUN": "2927408" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-38.52, -13.02],
+          [-38.48, -13.02],
+          [-38.48, -12.98],
+          [-38.52, -12.98],
+          [-38.52, -13.02]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "CD_MUN": "2919207" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-38.34, -12.92],
+          [-38.30, -12.92],
+          [-38.30, -12.88],
+          [-38.34, -12.88],
+          [-38.34, -12.92]
+        ]]
+      }
+    }
+  ]
+}

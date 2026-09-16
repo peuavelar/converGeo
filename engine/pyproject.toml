@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "convergeo-engine"
+version = "1.3.0"
+description = "Motor geoespacial e marketplace ConverGeo"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.5",
+  "h3>=4.1",
+  "shapely>=2.0",
+  "httpx>=0.27",
+  "pyyaml>=6.0",
+  "python-multipart>=0.0.9",
+  "psycopg2-binary>=2.9",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3", "pytest-asyncio>=0.24"]
+load = ["locust>=2.32"]
+
+[project.scripts]
+convergeo-engine = "convergeo_engine.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["convergeo_engine*"]
+
+[tool.setuptools.package-data]
+convergeo_engine = ["scoring/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
