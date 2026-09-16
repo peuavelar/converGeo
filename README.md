@@ -2,13 +2,13 @@
 
 **Inteligência imobiliária e geoespacial para Salvador e Lauro de Freitas (BA)**
 
-[![Version](https://img.shields.io/badge/version-1.2.0-0a0a0b)](./VERSION.md)
+[![Version](https://img.shields.io/badge/version-1.3.0-0a0a0b)](./VERSION.md)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
 [![MapLibre](https://img.shields.io/badge/MapLibre-Deck.gl-006aff)](https://maplibre.org/)
 [![License](https://img.shields.io/badge/license-private-lightgrey)](#)
 
-Frontend web do [ConverGeo](https://github.com/peuavelar/converGeo): mapa interativo, opportunity/match scores, marketplace, tempo de deslocamento e locais próximos via OpenStreetMap.
+Frontend web do [ConverGeo](https://github.com/peuavelar/converGeo): mapa interativo, opportunity/match scores, marketplace, tempo de deslocamento e locais próximos via OpenStreetMap. O motor de score e ingestão imobiliária vive em [`engine/`](./engine).
 
 ---
 
@@ -21,15 +21,14 @@ Frontend web do [ConverGeo](https://github.com/peuavelar/converGeo): mapa intera
 
 Ao trocar de modo, o mapa mostra um estado de carregamento com transição suave (evita parecer bug).
 
-## Destaques (v1.2.0)
+## Destaques (v1.3.0)
 
-- UX mobile do mapa (bottom sheet, safe-area, touch targets)
-- Header centralizado + transição visual entre **Comprar** / **Negócio**
-- Comparar locais A/B por digitação (Salvador + Lauro de Freitas)
-- Código enxuto: hooks de mapa/nearby/negócio + builders de camadas
-- Benchmarks externos opcionais (score calibrado atrás de flag)
+- Motor Python no mesmo repo (`engine/`): ETL H3 mascarado, renda Censo 2022, CNPJ geocodificado, OSM
+- Marketplace: CSV/VRSync, preço justo etapa A, página `/anuncie`
+- Flag `NEXT_PUBLIC_MARKETPLACE_SOURCE=mock|api` (padrão mock)
+- Modo Negócio continua em `GET /score` e `GET /top`
 
-Ver [CHANGELOG.md](./CHANGELOG.md), [VERSION.md](./VERSION.md), [docs/RELEASE_1.2.0.md](./docs/RELEASE_1.2.0.md) e [contexto.md](./contexto.md).
+Ver [CHANGELOG.md](./CHANGELOG.md), [VERSION.md](./VERSION.md), [contexto.md](./contexto.md) e [docs/DATA_ARCHITECTURE.md](./docs/DATA_ARCHITECTURE.md).
 
 ## Stack
 
@@ -38,7 +37,7 @@ Ver [CHANGELOG.md](./CHANGELOG.md), [VERSION.md](./VERSION.md), [docs/RELEASE_1.
 | App | Next.js 16 · React 19 · TypeScript |
 | UI | Tailwind CSS 4 |
 | Mapa | MapLibre GL · Deck.gl · react-map-gl |
-| Dados | Mocks regionais · H3 (negócio) · OSM Overpass |
+| Dados | Mocks regionais · H3 · OSM Overpass · FastAPI `engine/` |
 | Geo | Nominatim · BFF `/api/geo/*` |
 
 ## Estrutura
@@ -58,9 +57,10 @@ converGeo/
 │   ├── negocio/             # compare A/B + fetch hex
 │   ├── osm/ · providers/ · geo/
 ├── data/benchmarks/         # snapshots JSON (opcional)
-├── docs/                    # arquitetura + benchmarks
+├── engine/                  # FastAPI + ETL + marketplace
+├── docs/                    # arquitetura, ADRs, benchmarks
 ├── scripts/                 # seed / compare / testes
-└── package.json             # v1.2.0
+└── package.json             # v1.3.0
 ```
 
 ## Como rodar
@@ -93,6 +93,7 @@ npm run dev               # desenvolvimento
 npm run build             # produção
 npm run lint              # ESLint
 npm run test:benchmarks   # regras de calibração
+npm run engine:test       # pytest do motor
 npm run seed:benchmarks   # gera snapshots locais
 ```
 
@@ -113,7 +114,7 @@ curl http://localhost:3000/api/health
 
 | Doc | Conteúdo |
 |-----|----------|
-| [contexto.md](./contexto.md) | contexto completo da 1.2.0 (agentes / equipe) |
+| [contexto.md](./contexto.md) | contexto completo da 1.3.0 (agentes / equipe) |
 | [docs/RELEASE_1.2.0.md](./docs/RELEASE_1.2.0.md) | release notes detalhadas |
 | [VERSION.md](./VERSION.md) | release atual |
 | [CHANGELOG.md](./CHANGELOG.md) | histórico de versões |

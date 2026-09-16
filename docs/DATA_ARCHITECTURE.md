@@ -1,7 +1,6 @@
-# Arquitetura de dados — ConverGeo Web
+# Arquitetura de dados — ConverGeo Web v1.3.0
 
-Versão documentada para evoluir o front sem travar no mock, com OpenStreetMap
-já funcional e um encaixe limpo para o motor Python / FastAPI.
+Versão documentada para o front Next.js e o motor Python no mesmo repositório.
 
 ## Visão geral
 
@@ -10,18 +9,18 @@ já funcional e um encaixe limpo para o motor Python / FastAPI.
 │  UI (app/page.tsx)   │
 │  mapa · busca · POIs │
 └──────────┬───────────┘
-           │ fetch('/api/geo/...')
+           │ fetch('/api/geo/...')  fetch('/backend/...')
 ┌──────────▼───────────┐
-│  BFF Next.js         │  app/api/geo/*
+│  BFF Next.js         │  app/api/geo/*  + rewrite /backend
 │  cache + User-Agent  │
 └──────────┬───────────┘
            │
      ┌─────┴──────┐
      ▼            ▼
- OpenStreetMap   Backend Python
- Overpass        GET /nearby
- Nominatim       GET /geocode
-                 GET /reverse
+ OpenStreetMap   engine/ FastAPI (fonte de verdade do score)
+ Overpass        GET /score  GET /top          (v1 Negócio)
+ Nominatim       GET /v2/score  /v2/imoveis    (marketplace)
+                 POST /v2/ingest/planilha
 ```
 
 Troca de fonte **sem mudar a UI**:
@@ -32,12 +31,19 @@ Troca de fonte **sem mudar a UI**:
 | `backend`       | Só `BACKEND_ORIGIN` |
 | `hybrid`        | Backend → fallback OSM |
 
+Marketplace:
+
+| `NEXT_PUBLIC_MARKETPLACE_SOURCE` | Comportamento |
+|----------------------------------|---------------|
+| `mock` (padrão) | `app/data/marketplaceListings.ts` |
+| `api` | `GET /backend/v2/imoveis` com fallback para mock se a API falhar |
+
 ## Código versionado
 
 | Caminho | Papel |
 |---------|--------|
-| `lib/config/dataSources.ts` | Env / modo |
-| `lib/geo/types.ts` | Contratos JSON compartilháveis com Python |
+| `lib/config/dataSources.ts` | Env / modo geo |
+| `lib/geo/types.ts` | Contratos JSON compartilháveis |
 | `lib/osm/overpass.ts` | Cliente Overpass |
 | `lib/osm/nominatim.ts` | Cliente Nominatim |
 | `lib/providers/*` | Interface + factory OSM/backend/hybrid |
@@ -46,6 +52,9 @@ Troca de fonte **sem mudar a UI**:
 | `app/api/geo/reverse` | Reverse geocode |
 | `app/api/health` | Healthcheck local/Vercel |
 | `app/services/nearbyPlaces.ts` | Cliente UI → BFF |
+| `app/services/marketplaceApi.ts` | Cliente UI → FastAPI v2 |
+| `engine/` | Motor: ETL, score, marketplace, FastAPI |
+| `docs/adr/` | Decisões metodológicas |
 
 ## OpenStreetMap (já ligado)
 
@@ -68,77 +77,62 @@ curl "http://localhost:3000/api/geo/nearby?lat=-12.9714&lng=-38.5014&radius_m=15
 curl "http://localhost:3000/api/geo/geocode?q=Pituba"
 ```
 
-## Contrato para o motor Python
+## Motor Python (`engine/`) — fonte de verdade
 
-O backend deve expor (mesmos nomes/campos):
+Substitui `reference-api/`. Deploy típico: **Render** (Docker `engine/Dockerfile` ou `uvicorn`) + **Supabase** (Postgres + PostGIS, schema `convergeo`).
 
-### `GET /nearby?lat=&lng=&radius_m=`
-
-```json
-{
-  "places": [
-    {
-      "id": "py-1",
-      "name": "Hospital Exemplo",
-      "category": "hospital",
-      "lat": -12.97,
-      "lng": -38.50,
-      "distanceM": 420
-    }
-  ],
-  "source": "backend",
-  "fetchedAt": "2026-08-11T12:00:00.000Z",
-  "radiusM": 1500,
-  "center": { "lat": -12.9714, "lng": -38.5014 }
-}
+```bash
+cd engine
+pip install -e ".[dev]"
+python -m convergeo_engine.cli migrate
+python -m convergeo_engine.cli serve   # http://127.0.0.1:8000
 ```
 
-`category`: `restaurante` | `hospital` | `delegacia` | `escola`
+ETL (caminhos oficiais via env; **não** versionar zips da Receita/IBGE):
 
-### `GET /geocode?q=&limit=`
-
-```json
-[{ "lat": -13.00, "lng": -38.45, "name": "Pituba", "source": "backend" }]
+```bash
+python -m convergeo_engine.cli etl all
+python -m convergeo_engine.cli marketplace ingest-csv --file engine/templates/imoveis_seed_from_mocks.csv
+python -m convergeo_engine.cli marketplace aggregate
+python -m convergeo_engine.cli scoring compute
+python -m convergeo_engine.cli scoring validate
 ```
 
-ou `{ "hits": [ ... ] }` — o BFF backend provider espera array direto hoje;
-ao plugar Python, alinhar com `createBackendGeoProvider` em `lib/providers/osmAndBackend.ts`.
+### Contrato Negócio (v1, inalterado para o front)
 
-### `GET /reverse?lat=&lng=`
+`lib/negocio/fetchHexScores.ts` consome:
 
-```json
-{
-  "lat": -12.97,
-  "lng": -38.50,
-  "displayName": "...",
-  "suburb": "Barra",
-  "source": "backend"
-}
-```
+- `GET /score?lat=&lng=&segmento=`
+- `GET /top?segmento=&limit=`
+
+Resposta de sucesso: `status: "sucesso"`, `h3_index`, `breakdown.{estrutural,macroeconomico,comportamental}`.
+
+### Contrato marketplace (v2)
+
+- `GET /v2/score?lat&lng&perfil`
+- `GET /v2/hexagonos?perfil&bbox`
+- `GET /v2/imoveis?...`
+- `GET /v2/imoveis/{id}`
+- `POST /v2/ingest/planilha`
+- `POST /v2/anunciantes`
+- `POST /v2/anunciantes/{id}/feed/sync`
+- `POST /v2/explicar` (LLM opcional; fallback template)
+
+Códigos IBGE verificados: Salvador `2927408`, Lauro de Freitas `2919207`.
+
+## Contrato geo BFF (nearby / geocode)
+
+O BFF Next continua o mesmo. O motor **não** precisa implementar `/nearby` para o mapa OSM.
 
 ### Env
 
 ```env
-DATA_PROVIDER=hybrid
+DATA_PROVIDER=osm
 BACKEND_ORIGIN=http://127.0.0.1:8000
-OSM_USER_AGENT=ConverGeo/1.1 (seu-email-ou-repo)
+OSM_USER_AGENT=ConverGeo/1.3 (https://github.com/peuavelar/converGeo)
+NEXT_PUBLIC_MARKETPLACE_SOURCE=mock
 ```
 
-`next.config.ts` já faz rewrite `/backend/:path*` → `BACKEND_ORIGIN`.
+`next.config.ts` faz rewrite `/backend/:path*` → `BACKEND_ORIGIN`.
 
-## Importar dados do motor (batch)
-
-Opções futuras (sem quebrar o front):
-
-1. Python grava GeoJSON/Parquet → endpoint `/regions` ou arquivo em `public/data/`
-2. Python alimenta Supabase/PostGIS → `regionsApi.ts` troca mock por `fetch`
-3. ETL gera `regions.mock.ts` / listings via script CI
-
-O contrato de regiões continua em `app/types/region.ts` + `app/services/regionsApi.ts`.
-
-## Próximos passos sugeridos
-
-1. Manter `DATA_PROVIDER=osm` em local até o FastAPI subir  
-2. Implementar `/nearby` no Python com o JSON acima  
-3. Ligar `DATA_PROVIDER=hybrid` e validar selo `backend` no mapa  
-4. Migrar ranking/scores de `regionsApi` para o mesmo backend
+Números de pitch (hexágonos, p95, correlação): ver `docs/PITCH_NUMEROS.md`.

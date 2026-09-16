@@ -5,6 +5,18 @@ Todas as mudanças relevantes do frontend ConverGeo.
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 Versionamento: [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.3.0] — 2026-09-16
+
+### Added
+- Motor Python em `engine/` (ETL H3 mascarado, IBGE com renda real, CNPJ geocodificado, OSM, API v1+v2)
+- Marketplace: schema, CSV/VRSync, preço justo, página **Anuncie**
+- Flag `NEXT_PUBLIC_MARKETPLACE_SOURCE=mock|api` (padrão mock)
+- ADRs em `docs/adr/` e `docs/PITCH_NUMEROS.md`
+
+### Changed
+- Fonte de verdade do score: FastAPI (`engine/`), não API Java
+- `reference-api/` removido (paridade v1 em `engine/`)
+
 ## [1.2.0] — 2026-08-11
 
 ### Added
@@ -35,6 +47,7 @@ Versionamento: [SemVer](https://semver.org/lang/pt-BR/).
 
 - Release inicial MapLibre + Deck.gl + mocks Salvador
 
+[1.3.0]: https://github.com/peuavelar/converGeo/releases/tag/v1.3.0
 [1.2.0]: https://github.com/peuavelar/converGeo/releases/tag/v1.2.0
 [1.1.0]: https://github.com/peuavelar/converGeo/releases/tag/v1.1.0
 [1.0.0]: https://github.com/peuavelar/converGeo/releases/tag/v1.0.0
