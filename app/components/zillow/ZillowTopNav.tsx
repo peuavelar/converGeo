@@ -1,6 +1,7 @@
 "use client";
 
 import type { AppMode } from "../../utils/realEstate";
+import AuthMenu from "../AuthMenu";
 
 type Props = {
   appMode: AppMode;
@@ -93,12 +94,7 @@ export default function ZillowTopNav({
         >
           Anuncie
         </a>
-        <button
-          type="button"
-          className="rounded-full bg-[#0a0a0b] px-2.5 py-1 text-[10px] font-semibold text-white transition hover:bg-[#1c1c1f] active:scale-[0.98] md:px-3 md:py-1 md:text-xs"
-        >
-          Entrar
-        </button>
+        <AuthMenu />
       </div>
     </header>
   );

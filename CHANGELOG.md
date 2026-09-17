@@ -5,6 +5,23 @@ Todas as mudanças relevantes do frontend ConverGeo.
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 Versionamento: [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.3.1] — 2026-09-16
+
+### Added
+- Persistência Postgres no schema `convergeo_engine` isolado do legado `convergeo`
+- Leitor oficial dos zips CNPJ da Receita; `etl ibge-prepare`
+- Auth: HMAC nas API keys, JWT Supabase, telas `/entrar` `/cadastro` `/painel`
+- ADRs 0007–0010; Docker HEALTHCHECK; workflow `engine.yml`
+
+### Changed
+- `/score` e `/top` leem scores legados com `V1_SOURCE=legacy`
+- Camada mercado do perfil investidor com direção negativa
+- `/anuncie` deixa de expor formulário de API key
+
+### Security
+- Engine recusa subir em produção sem `ENGINE_ADMIN_KEY`
+- Rate limit nas rotas públicas; caches de geocodificação persistem falhas
+
 ## [1.3.0] — 2026-09-16
 
 ### Added
@@ -48,6 +65,7 @@ Versionamento: [SemVer](https://semver.org/lang/pt-BR/).
 
 - Release inicial MapLibre + Deck.gl + mocks Salvador
 
+[1.3.1]: https://github.com/peuavelar/converGeo/releases/tag/v1.3.1
 [1.3.0]: https://github.com/peuavelar/converGeo/releases/tag/v1.3.0
 [1.2.0]: https://github.com/peuavelar/converGeo/releases/tag/v1.2.0
 [1.1.0]: https://github.com/peuavelar/converGeo/releases/tag/v1.1.0

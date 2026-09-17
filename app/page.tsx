@@ -50,6 +50,7 @@ import {
   type CompareRegionPoint,
 } from "../lib/negocio/compareRegions";
 import ZillowTopNav from "./components/zillow/ZillowTopNav";
+import DemoBanner from "./components/DemoBanner";
 import ZillowFilterBar from "./components/zillow/ZillowFilterBar";
 import {
   ADVANCED_FILTER_OPEN,
@@ -796,6 +797,7 @@ export default function App() {
 
   return (
     <main className="flex h-dvh max-h-dvh w-full max-w-[100vw] flex-col overflow-hidden bg-white print:h-auto print:overflow-visible">
+      <DemoBanner />
       <ZillowTopNav
         appMode={appMode}
         setAppMode={switchAppMode}
