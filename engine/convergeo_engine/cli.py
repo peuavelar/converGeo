@@ -4,18 +4,19 @@ import argparse
 import json
 from pathlib import Path
 
-from convergeo_engine.api.app import migrate
 from convergeo_engine.config import ENGINE_ROOT, get_settings
 from convergeo_engine.etl import run_all
 from convergeo_engine.etl.cnpj import run_cnpj
 from convergeo_engine.etl.grade import run_grade
 from convergeo_engine.etl.ibge import run_ibge
+from convergeo_engine.etl.ibge_prepare import prepare_ibge
 from convergeo_engine.etl.osm import run_osm
 from convergeo_engine.marketplace.aggregate import aggregate
 from convergeo_engine.marketplace.ingest import ingest_csv, ingest_vrsync
+from convergeo_engine.migrate import migrate
 from convergeo_engine.scoring.compute import compute_scores_v2
 from convergeo_engine.seed_demo import seed_demo
-from convergeo_engine.store import get_store
+from convergeo_engine.store import get_repository
 
 
 def write_fase1_report(payload: dict) -> Path:
@@ -54,7 +55,7 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("migrate")
     etl = sub.add_parser("etl")
-    etl.add_argument("step", choices=["grade", "ibge", "cnpj", "osm", "all"])
+    etl.add_argument("step", choices=["grade", "ibge", "ibge-prepare", "cnpj", "osm", "all"])
     mkt = sub.add_parser("marketplace")
     mkt.add_argument("step", choices=["aggregate", "sync-feeds", "ingest-csv"])
     mkt.add_argument("--file", default="")
@@ -65,12 +66,15 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("serve")
 
     args = parser.parse_args(argv)
-    store = get_store()
+    store = get_repository()
 
     if args.cmd == "migrate":
         print(json.dumps(migrate(), ensure_ascii=False))
         return 0
     if args.cmd == "etl":
+        if args.step == "ibge-prepare":
+            print(json.dumps(prepare_ibge(get_settings()), ensure_ascii=False, default=str))
+            return 0
         fn = {"grade": run_grade, "ibge": run_ibge, "cnpj": run_cnpj, "osm": run_osm, "all": run_all}[
             args.step
         ]
@@ -88,11 +92,18 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(ingest_csv(args.anunciante, content, store), default=str))
             return 0
         if args.step == "sync-feeds":
-            an = next((a for a in store.anunciantes if a["id"] == args.anunciante), None)
-            if not an or not an.get("feed_bytes"):
+            an = store.get_anunciante(args.anunciante)
+            if not an or not an.get("feed_url"):
                 print(json.dumps({"error": "feed não encontrado"}))
                 return 1
-            print(json.dumps(ingest_vrsync(args.anunciante, an["feed_bytes"], store), default=str))
+            import httpx
+
+            settings = get_settings()
+            with httpx.Client(timeout=settings.feed_timeout_s) as client:
+                res = client.get(an["feed_url"])
+                res.raise_for_status()
+                raw = res.content
+            print(json.dumps(ingest_vrsync(args.anunciante, raw, store), default=str))
             return 0
     if args.cmd == "scoring":
         if args.step == "compute":
@@ -101,10 +112,11 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         path = ENGINE_ROOT / "reports" / "validacao_score.md"
         path.parent.mkdir(parents=True, exist_ok=True)
-        n = len(store.scores_imobiliario)
+        scores = store.list_scores_imobiliario()
+        n = len(scores)
         pairs = []
-        px = {p["h3_index"]: p.get("mediana_m2") for p in store.precos_hex}
-        for s in store.scores_imobiliario:
+        px = {p["h3_index"]: p.get("mediana_m2") for p in store.list_precos_hex()}
+        for s in scores:
             m = px.get(s["h3_index"])
             if s.get("score_total") is not None and m is not None:
                 pairs.append((float(s["score_total"]), float(m)))

@@ -42,6 +42,8 @@ yarn-error.log*
 !.env.example
 !engine/.env.example
 
+engine/seeds/usuarios_dev.json
+
 # vercel
 .vercel
 

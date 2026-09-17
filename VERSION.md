@@ -1,18 +1,18 @@
-# ConverGeo Web — v1.3.0
+# ConverGeo Web — v1.3.1
 
 ## Release
-- **Versão:** 1.3.0
-- **Motor:** `engine/` (FastAPI v1 `/score` `/top` + v2 marketplace)
+- **Versão:** 1.3.1
+- **Motor:** persistência Postgres (`convergeo_engine`), v1 lê `convergeo.scores` (`V1_SOURCE=legacy`)
 - **Marketplace:** mocks por padrão; API atrás de `NEXT_PUBLIC_MARKETPLACE_SOURCE=api`
 
-## O que mudou (1.3.0)
-- ETL corrigido (máscara municipal, renda Censo 2022, CNPJs geocodificados, OSM)
-- Ingestão CSV + VRSync, preço justo etapa A
-- Página `/anuncie`, seletor de perfil no modo Comprar
-- ADRs metodológicos em `docs/adr/`
+## O que mudou (1.3.1)
+- Repositório real (Protocol + Postgres); MemoryStore só testes/demo
+- Leitor CNPJ no layout oficial (zip latin1 `;` sem cabeçalho)
+- `etl ibge-prepare`, STRtree, área geodésica
+- API keys HMAC, login Supabase (`proxy.ts`, `/entrar`, `/painel`)
+- Demo marcado (`"demo": true`) e direção de mercado por perfil
 
 ## Produção
-- Front: Vercel (`convergeo-front`) — só o Next.js; `engine/` não sobe na Vercel
-- Motor: Render / Docker (`engine/Dockerfile`) + Supabase PostGIS
-- Marketplace em produção: mock até `NEXT_PUBLIC_MARKETPLACE_SOURCE=api` no painel (nunca localhost)
-- Sem source maps no browser; `/api/health` não expõe origem do motor
+- Front: Vercel — só o Next.js
+- Motor: **serviço Render novo** (não substituir o legado) + `migrate` no Supabase
+- Marketplace em produção: mock até flag `api`

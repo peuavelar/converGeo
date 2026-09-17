@@ -17,18 +17,21 @@ class V1ScoreOk(BaseModel):
     segmento: str
     score_total: float
     breakdown: V1Breakdown
+    demo: bool | None = None
 
 
 class V1ScoreEmpty(BaseModel):
     status: str = "sem_dados"
     h3_index: str
     mensagem: str
+    demo: bool | None = None
 
 
 class V1TopOk(BaseModel):
     status: str = "sucesso"
     segmento: str
     recomendacoes: list[dict]
+    demo: bool | None = None
 
 
 class V2ScoreResponse(BaseModel):
@@ -39,6 +42,7 @@ class V2ScoreResponse(BaseModel):
     cobertura: dict[str, bool]
     vizinhos: list[str]
     explicacao_base: list[dict]
+    demo: bool | None = None
 
 
 class FairPrice(BaseModel):

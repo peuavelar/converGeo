@@ -1,0 +1,32 @@
+# Mapeamento de colunas IBGE Censo 2022 (nomes variam entre publicações).
+# Consulta: 2026-09-16
+# Malha de setores: IBGE Geociências — malhas de setores censitários 2022 (GPKG/SHP)
+#   https://www.ibge.gov.br/geociencias/organizacao-do-territorio/malhas-territoriais/
+# Agregados por setores (população/domicílios): Censo 2022
+#   http://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios/
+# Rendimento do responsável:
+#   http://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios_Rendimento_do_Responsavel/
+# Código exato da variável de rendimento: A VERIFICAR no dicionário do produto
+# (o YAML aceita aliases; confirme o código na publicação baixada).
+
+setor_id:
+  - CD_SETOR
+  - CD_GEOCODI
+  - setor_id
+populacao:
+  - V0001
+  - populacao
+  - POP
+domicilios:
+  - V0002
+  - domicilios
+  - DOM
+renda:
+  - renda_media
+  - rendimento
+  - V005
+  - V06001
+municipio:
+  - CD_MUN
+  - CD_MUNICIPIO
+  - ibge

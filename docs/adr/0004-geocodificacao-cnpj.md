@@ -4,11 +4,17 @@
 O motor antigo usava um dicionário de ~26 bairros (D1) e só `Estabelecimentos0.zip` (D6).
 
 ## Decisão
-1. Processar **todos** os `Estabelecimentos*.csv/zip` do diretório `RF_CNPJ_DIR`.
-2. Filtrar situação ativa (`02`) e municípios-alvo via tabela oficial TOM→IBGE da Receita
-   (https://www.gov.br/receitafederal/dados/municipios.csv/view).
-3. Fallback: CEP (cache) → logradouro+número (Nominatim ≤1 req/s, User-Agent, cache) → centróide de bairro (polígono, não dicionário).
-4. `geo_precisao=sem` não entra no score; `bairro` entra com `BAIRRO_GEO_WEIGHT`.
+1. Processar **todos** os `Estabelecimentos*.zip` (e CSV extraído) do diretório `RF_CNPJ_DIR`.
+2. Layout oficial: zip → CSV **sem cabeçalho**, `sep=';'`, `encoding=latin1`. Colunas em `ESTABELECIMENTO_COLS` (consulta 2026-09-16 ao dicionário CNPJ aberto).
+3. CNPJ = `cnpj_basico` (8) + `cnpj_ordem` (4) + `cnpj_dv` (2).
+4. Filtrar situação ativa (`02`) e municípios-alvo via tabela oficial TOM→IBGE.
+   Salvador TOM 3849 → IBGE 2927408; Lauro 3685 → 2919207 (falha se a tabela não bater).
+5. Fallback: CEP (arquivo local opcional + Nominatim) → logradouro (Nominatim ≤1 req/s) → centróide de **polígono** de bairro.
+6. Caches `geo_cache_cep` / `geo_cache_endereco` persistem acerto e `nao_encontrado`.
+7. `GEO_PROVIDERS` ordena adapters (`cep_file`, `nominatim`, `bairro_poly`). Cobertura por provedor: **A VERIFICAR** após ETL real (anexar histograma `geo_precisao` ao relatório).
+
+Fonte layout: https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/dados-abertos/receitafederal/cadastro-nacional-da-pessoa-juridica-cnpj
+
 
 ## Alternativas
 - Geocoder comercial pago: possível via adapter, não nesta versão.

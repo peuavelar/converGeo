@@ -1,0 +1,27 @@
+[
+  {
+    "email": "admin@localhost.dev",
+    "senha": "trocar-esta-senha",
+    "papel": "admin",
+    "nome": "Admin Dev"
+  },
+  {
+    "email": "imob@localhost.dev",
+    "senha": "trocar-esta-senha",
+    "papel": "imobiliaria",
+    "nome": "Imobiliária Dev",
+    "anunciante": {
+      "nome": "Imob Dev",
+      "tipo": "imobiliaria",
+      "creci": "00000-J"
+    }
+  },
+  {
+    "email": "corretor@localhost.dev",
+    "senha": "trocar-esta-senha",
+    "papel": "corretor",
+    "nome": "Corretor Dev",
+    "creci": "00000-F",
+    "vinculo_anunciante": "Imob Dev"
+  }
+]

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "convergeo-engine"
-version = "1.3.0"
+version = "1.3.1"
 description = "Motor geoespacial e marketplace ConverGeo"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -19,6 +19,8 @@ dependencies = [
   "pyyaml>=6.0",
   "python-multipart>=0.0.9",
   "psycopg2-binary>=2.9",
+  "pyproj>=3.6",
+  "PyJWT[crypto]>=2.9",
 ]
 
 [project.optional-dependencies]
@@ -32,8 +34,11 @@ convergeo-engine = "convergeo_engine.cli:main"
 include = ["convergeo_engine*"]
 
 [tool.setuptools.package-data]
-convergeo_engine = ["scoring/*.yaml"]
+convergeo_engine = ["scoring/*.yaml", "etl/*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+  "integration: requer PostGIS (DATABASE_URL)",
+]

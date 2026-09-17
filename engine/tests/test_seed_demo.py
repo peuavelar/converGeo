@@ -9,5 +9,7 @@ def test_seed_demo_fills_negocio_and_marketplace():
     assert out["scores_v1"] > 100
     assert any(s["segmento"] == "food_service" for s in store.scores)
     assert store.imoveis
+    assert out.get("demo") is True
     again = seed_demo(store)
     assert again.get("skipped") is True
+    assert again.get("demo") is True

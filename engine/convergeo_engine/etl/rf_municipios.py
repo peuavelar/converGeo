@@ -6,6 +6,25 @@ import csv
 from pathlib import Path
 
 
+# Códigos conferidos em 2026-09-16:
+# IBGE: https://www.ibge.gov.br/explica/codigos-dos-municipios.php
+# TOM RF: https://www.gov.br/receitafederal/dados/municipios.csv/view
+TOM_IBGE_OFICIAL = {
+    "3849": "2927408",  # Salvador/BA
+    "3685": "2919207",  # Lauro de Freitas/BA
+}
+
+
+def validate_tom_ibge(mapping: dict[str, str]) -> None:
+    for tom, ibge in TOM_IBGE_OFICIAL.items():
+        got = mapping.get(tom)
+        if got != ibge:
+            raise ValueError(
+                f"Mapeamento TOM→IBGE inválido para {tom}: esperado {ibge}, obtido {got!r}. "
+                "Use a tabela oficial da Receita (municipios.csv) conferida contra o IBGE."
+            )
+
+
 def load_rf_municipio_map(path: str | Path) -> dict[str, str]:
     """
     Mapeia código TOM/RF (4 dígitos) → código IBGE (7 dígitos).
@@ -26,6 +45,7 @@ def load_rf_municipio_map(path: str | Path) -> dict[str, str]:
             if not tom or not ibge.isdigit() or len(ibge) != 7:
                 continue
             mapping[tom.zfill(4)] = ibge
+    validate_tom_ibge(mapping)
     return mapping
 
 

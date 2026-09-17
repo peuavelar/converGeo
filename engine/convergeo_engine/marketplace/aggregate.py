@@ -7,7 +7,7 @@ from statistics import median
 import h3
 
 from convergeo_engine.config import get_settings
-from convergeo_engine.store import MemoryStore, get_store
+from convergeo_engine.store import get_repository
 
 
 def _ppm2(items: list[dict]) -> list[float]:
@@ -35,11 +35,11 @@ def _stats(items: list[dict]) -> dict | None:
     }
 
 
-def aggregate(store: MemoryStore | None = None, min_n: int | None = None) -> list[dict]:
+def aggregate(store=None, min_n: int | None = None) -> list[dict]:
     settings = get_settings()
-    store = store or get_store()
+    store = store or get_repository()
     min_n = min_n or settings.min_bucket_n
-    ativos = [i for i in store.imoveis if i.get("status") == "ativo"]
+    ativos = [i for i in store.list_imoveis(status="ativo")]
     out: list[dict] = []
     keys = {(i.get("h3_index"), i.get("finalidade"), i.get("tipo")) for i in ativos if i.get("h3_index")}
     by_city = {}
@@ -94,5 +94,5 @@ def aggregate(store: MemoryStore | None = None, min_n: int | None = None) -> lis
                 "nivel_fallback": nivel,
             }
         )
-    store.precos_hex = out
+    store.replace_precos_hex(out)
     return out

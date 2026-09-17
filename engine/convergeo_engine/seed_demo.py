@@ -51,9 +51,14 @@ def _unit(key: str) -> float:
 
 
 def seed_demo(store: MemoryStore | None = None) -> dict:
+    from convergeo_engine.config import get_settings
+
+    if get_settings().database_url:
+        raise RuntimeError("seed_demo recusado com DATABASE_URL definido.")
     store = store or get_store()
+    store.demo = True
     if store.scores:
-        return {"skipped": True, "hexagonos": len(store.hexagonos), "scores": len(store.scores)}
+        return {"skipped": True, "hexagonos": len(store.hexagonos), "scores": len(store.scores), "demo": True}
 
     cells: set[str] = set()
     for lat, lng in CENTERS:
@@ -132,7 +137,7 @@ def seed_demo(store: MemoryStore | None = None) -> dict:
     store.replace_osm(pois)
 
     ingest = seed_from_csv(store=store)
-    for im in store.imoveis:
+    for im in store.list_imoveis():
         if im.get("lat") is not None and im.get("lng") is not None:
             im["h3_index"] = latlng_to_cell(float(im["lat"]), float(im["lng"]))
             im["geo_precisao"] = "endereco"

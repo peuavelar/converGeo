@@ -1,30 +1,41 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 
 from convergeo_engine.api.models import V1ScoreEmpty, V1ScoreOk, V1TopOk
 from convergeo_engine.geo import cell_center, latlng_to_cell
-from convergeo_engine.store import get_store
+from convergeo_engine.security import rate_limit
+from convergeo_engine.store import get_repository
 
 router = APIRouter()
 
 
+def _demo_flag() -> bool:
+    repo = get_repository()
+    return bool(getattr(repo, "demo", False))
+
+
 @router.get("/score")
 def get_score(
+    request: Request,
     lat: float = Query(...),
     lng: float = Query(...),
     segmento: str = Query("food_service"),
 ):
+    rate_limit(request)
     h3_index = latlng_to_cell(lat, lng)
-    store = get_store()
-    row = store.get_score(h3_index, segmento)
+    repo = get_repository()
+    row = repo.get_score(h3_index, segmento)
     if not row:
-        return V1ScoreEmpty(
+        body = V1ScoreEmpty(
             h3_index=h3_index,
             mensagem="Região sem dados suficientes ou fora da área de cobertura.",
         ).model_dump()
+        if _demo_flag():
+            body["demo"] = True
+        return body
     hex_lat, hex_lng = cell_center(row["h3_index"])
-    return V1ScoreOk(
+    body = V1ScoreOk(
         h3_index=row["h3_index"],
         lat=hex_lat,
         lng=hex_lng,
@@ -35,18 +46,27 @@ def get_score(
             "macroeconomico": round(float(row.get("score_macroeconomico") or 0), 2),
             "comportamental": round(float(row.get("score_comportamental") or 0), 2),
         },
+        demo=_demo_flag() or None,
     ).model_dump()
+    if not body.get("demo"):
+        body.pop("demo", None)
+    return body
 
 
 @router.get("/top")
 def get_top(
+    request: Request,
     segmento: str = Query("food_service"),
     limit: int = Query(5),
 ):
-    store = get_store()
-    rows = store.top_scores(segmento, limit)
+    rate_limit(request)
+    repo = get_repository()
+    rows = repo.top_scores(segmento, limit)
     if not rows:
-        return {"status": "sem_dados", "mensagem": f"Sem dados para o segmento {segmento}"}
+        body = {"status": "sem_dados", "mensagem": f"Sem dados para o segmento {segmento}"}
+        if _demo_flag():
+            body["demo"] = True
+        return body
     recs = []
     for res in rows:
         hex_lat, hex_lng = cell_center(res["h3_index"])
@@ -63,4 +83,7 @@ def get_top(
                 },
             }
         )
-    return V1TopOk(segmento=segmento, recomendacoes=recs).model_dump()
+    body = V1TopOk(segmento=segmento, recomendacoes=recs, demo=_demo_flag() or None).model_dump()
+    if not body.get("demo"):
+        body.pop("demo", None)
+    return body
