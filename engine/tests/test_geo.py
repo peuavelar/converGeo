@@ -38,9 +38,10 @@ def test_area_apportion_two_sectors_three_hexes():
         [("H1", h1), ("H2", h2), ("H3", h3)],
     )
     by = {r["h3_index"]: r for r in rows}
-    assert abs(by["H1"]["populacao"] - 50) < 1e-6
-    assert abs(by["H2"]["populacao"] - 50) < 1e-6
-    assert abs(by["H3"]["populacao"] - 50) < 1e-6
+    # Fração geodésica ≈ planar perto do equador; tolerância 0.02.
+    assert abs(by["H1"]["populacao"] - 50) < 0.02
+    assert abs(by["H2"]["populacao"] - 50) < 0.02
+    assert abs(by["H3"]["populacao"] - 50) < 0.02
 
 
 def test_geocode_fallback_cep_then_endereco_then_bairro():

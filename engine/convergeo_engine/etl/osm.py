@@ -8,7 +8,7 @@ import httpx
 
 from convergeo_engine.config import Settings, get_settings
 from convergeo_engine.geo import latlng_to_cell
-from convergeo_engine.store import MemoryStore, get_store
+from convergeo_engine.store import get_repository
 
 QUERY = """
 [out:json][timeout:90];
@@ -76,12 +76,12 @@ def parse_overpass(payload: dict[str, Any]) -> list[dict]:
 
 
 def run_osm(
-    store: MemoryStore | None = None,
+    store=None,
     settings: Settings | None = None,
     payload: dict[str, Any] | None = None,
 ) -> dict:
     settings = settings or get_settings()
-    store = store or get_store()
+    store = store or get_repository()
     if payload is None:
         q = QUERY.replace("{bbox}", BBOX)
         with httpx.Client(timeout=120.0) as client:

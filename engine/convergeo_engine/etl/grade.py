@@ -9,7 +9,7 @@ from shapely.geometry import shape
 
 from convergeo_engine.config import Settings, get_settings
 from convergeo_engine.geo import mask_hexes
-from convergeo_engine.store import MemoryStore, get_store
+from convergeo_engine.store import get_repository
 
 
 def load_malha_geojson(path: str | Path) -> list[tuple[str, object]]:
@@ -23,9 +23,9 @@ def load_malha_geojson(path: str | Path) -> list[tuple[str, object]]:
     return out
 
 
-def run_grade(store: MemoryStore | None = None, settings: Settings | None = None) -> dict:
+def run_grade(store=None, settings: Settings | None = None) -> dict:
     settings = settings or get_settings()
-    store = store or get_store()
+    store = store or get_repository()
     path = settings.ibge_malha_path
     if not path:
         raise ValueError("IBGE_MALHA_PATH não definido (malha municipal IBGE).")

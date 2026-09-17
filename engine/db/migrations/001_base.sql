@@ -1,7 +1,5 @@
--- 001_base.sql — schema convergeo (idempotente)
-CREATE SCHEMA IF NOT EXISTS convergeo;
-
-CREATE TABLE IF NOT EXISTS convergeo.hexagonos (
+-- 001_base.sql — tabelas do engine (NÃO usa o schema legado convergeo)
+CREATE TABLE IF NOT EXISTS convergeo_engine.hexagonos (
   h3_index text PRIMARY KEY,
   municipio_ibge char(7) NOT NULL,
   pct_area_terrestre double precision NOT NULL,
@@ -10,11 +8,11 @@ CREATE TABLE IF NOT EXISTS convergeo.hexagonos (
   geom geometry(Polygon, 4326)
 );
 
-CREATE INDEX IF NOT EXISTS hexagonos_mun_idx ON convergeo.hexagonos (municipio_ibge);
-CREATE INDEX IF NOT EXISTS hexagonos_geom_gix ON convergeo.hexagonos USING GIST (geom);
+CREATE INDEX IF NOT EXISTS eng_hexagonos_mun_idx ON convergeo_engine.hexagonos (municipio_ibge);
+CREATE INDEX IF NOT EXISTS eng_hexagonos_geom_gix ON convergeo_engine.hexagonos USING GIST (geom);
 
-CREATE TABLE IF NOT EXISTS convergeo.demografico (
-  h3_index text PRIMARY KEY REFERENCES convergeo.hexagonos (h3_index),
+CREATE TABLE IF NOT EXISTS convergeo_engine.demografico (
+  h3_index text PRIMARY KEY REFERENCES convergeo_engine.hexagonos (h3_index),
   populacao double precision,
   domicilios double precision,
   densidade_hab_km2 double precision,
@@ -23,24 +21,24 @@ CREATE TABLE IF NOT EXISTS convergeo.demografico (
   renda_ano_base integer
 );
 
-CREATE TABLE IF NOT EXISTS convergeo.empresas (
+CREATE TABLE IF NOT EXISTS convergeo_engine.empresas (
   cnpj text PRIMARY KEY,
   cnae_principal text,
   cnae_secundarias text,
   data_inicio date,
   cep text,
-  h3_index text REFERENCES convergeo.hexagonos (h3_index),
+  h3_index text,
   geo_precisao text NOT NULL CHECK (geo_precisao IN ('cep', 'endereco', 'bairro', 'sem')),
   municipio_ibge char(7),
   lat double precision,
   lng double precision
 );
 
-CREATE INDEX IF NOT EXISTS empresas_h3_idx ON convergeo.empresas (h3_index);
-CREATE INDEX IF NOT EXISTS empresas_prec_idx ON convergeo.empresas (geo_precisao);
-CREATE INDEX IF NOT EXISTS empresas_cnae_idx ON convergeo.empresas (cnae_principal);
+CREATE INDEX IF NOT EXISTS eng_empresas_h3_idx ON convergeo_engine.empresas (h3_index);
+CREATE INDEX IF NOT EXISTS eng_empresas_prec_idx ON convergeo_engine.empresas (geo_precisao);
+CREATE INDEX IF NOT EXISTS eng_empresas_cnae_idx ON convergeo_engine.empresas (cnae_principal);
 
-CREATE TABLE IF NOT EXISTS convergeo.osm_pois (
+CREATE TABLE IF NOT EXISTS convergeo_engine.osm_pois (
   osm_id text PRIMARY KEY,
   categoria text NOT NULL,
   nome text,
@@ -50,10 +48,10 @@ CREATE TABLE IF NOT EXISTS convergeo.osm_pois (
   geom geometry(Point, 4326)
 );
 
-CREATE INDEX IF NOT EXISTS osm_cat_idx ON convergeo.osm_pois (categoria);
-CREATE INDEX IF NOT EXISTS osm_geom_gix ON convergeo.osm_pois USING GIST (geom);
+CREATE INDEX IF NOT EXISTS eng_osm_cat_idx ON convergeo_engine.osm_pois (categoria);
+CREATE INDEX IF NOT EXISTS eng_osm_geom_gix ON convergeo_engine.osm_pois USING GIST (geom);
 
-CREATE TABLE IF NOT EXISTS convergeo.scores (
+CREATE TABLE IF NOT EXISTS convergeo_engine.scores (
   h3_index text NOT NULL,
   segmento text NOT NULL,
   score_estrutural double precision,
@@ -63,25 +61,37 @@ CREATE TABLE IF NOT EXISTS convergeo.scores (
   PRIMARY KEY (h3_index, segmento)
 );
 
-CREATE INDEX IF NOT EXISTS scores_seg_total_idx ON convergeo.scores (segmento, score_total DESC);
+CREATE INDEX IF NOT EXISTS eng_scores_seg_total_idx ON convergeo_engine.scores (segmento, score_total DESC);
 
-CREATE TABLE IF NOT EXISTS convergeo.geo_cache_cep (
+CREATE TABLE IF NOT EXISTS convergeo_engine.geo_cache_cep (
   cep char(8) PRIMARY KEY,
-  lat double precision NOT NULL,
-  lng double precision NOT NULL,
+  lat double precision,
+  lng double precision,
+  status text NOT NULL DEFAULT 'ok',
   atualizado_em timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS convergeo.geo_cache_endereco (
+CREATE TABLE IF NOT EXISTS convergeo_engine.geo_cache_endereco (
   query_norm text PRIMARY KEY,
-  lat double precision NOT NULL,
-  lng double precision NOT NULL,
+  lat double precision,
+  lng double precision,
+  status text NOT NULL DEFAULT 'ok',
   atualizado_em timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS convergeo.municipios_rf (
+CREATE TABLE IF NOT EXISTS convergeo_engine.municipios_rf (
   codigo_tom text PRIMARY KEY,
   codigo_ibge char(7) NOT NULL,
   nome text,
   uf char(2)
+);
+
+CREATE TABLE IF NOT EXISTS convergeo_engine.etl_execucoes (
+  id bigserial PRIMARY KEY,
+  etapa text NOT NULL,
+  arquivo text,
+  offset_linhas bigint NOT NULL DEFAULT 0,
+  status text NOT NULL DEFAULT 'ok',
+  detalhes jsonb NOT NULL DEFAULT '{}'::jsonb,
+  atualizado_em timestamptz NOT NULL DEFAULT now()
 );

@@ -1,4 +1,4 @@
-"""IBGE: rateio por área + renda real (nunca densidade como proxy)."""
+"""IBGE: rateio por área geodésica + renda real (nunca densidade como proxy)."""
 
 from __future__ import annotations
 
@@ -7,20 +7,19 @@ import json
 from pathlib import Path
 
 from shapely.geometry import shape
+from shapely.strtree import STRtree
 
 from convergeo_engine.config import Settings, get_settings
-from convergeo_engine.geo import area_apportion, hex_polygon
-from convergeo_engine.store import MemoryStore, get_store
+from convergeo_engine.geo import area_apportion, geodesic_area_m2, hex_polygon
+from convergeo_engine.store import get_repository
 
-# Censo 2022 — rendimento do responsável por setor:
-# http://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios_Rendimento_do_Responsavel/
 RENDA_FONTE_2022 = "censo_2022_rendimento_responsavel_setor"
 RENDA_ANO_2022 = 2022
 
 
-def run_ibge(store: MemoryStore | None = None, settings: Settings | None = None) -> dict:
+def run_ibge(store=None, settings: Settings | None = None) -> dict:
     settings = settings or get_settings()
-    store = store or get_store()
+    repo = store or get_repository()
     if not settings.ibge_setores_path:
         raise ValueError("IBGE_SETORES_PATH não definido.")
     data = json.loads(Path(settings.ibge_setores_path).read_text(encoding="utf-8"))
@@ -30,40 +29,42 @@ def run_ibge(store: MemoryStore | None = None, settings: Settings | None = None)
         with Path(settings.ibge_renda_path).open(encoding="utf-8", newline="") as fh:
             for row in csv.DictReader(fh):
                 sid = row.get("setor_id") or row.get("CD_SETOR") or ""
-                raw = row.get("renda_media") or row.get("V005") or row.get("rendimento")
+                raw = row.get("renda_media") or row.get("V005") or row.get("rendimento") or row.get("V06001")
                 if sid and raw:
-                    renda_por_setor[sid] = float(raw)
+                    renda_por_setor[sid] = float(str(raw).replace(",", "."))
 
+    setor_geoms = []
     for feat in data["features"]:
         props = feat.get("properties") or {}
         sid = str(props.get("setor_id") or props.get("CD_SETOR") or "")
         pop = float(props.get("populacao") or props.get("V0001") or 0)
         dom = float(props.get("domicilios") or props.get("V0002") or 0)
-        setores.append((sid, shape(feat["geometry"]), pop, dom))
+        geom = shape(feat["geometry"])
+        setores.append((sid, geom, pop, dom))
+        setor_geoms.append((sid, geom, pop, renda_por_setor.get(sid), props.get("renda_media")))
 
-    hexes = [(h["h3_index"], hex_polygon(h["h3_index"])) for h in store.hexagonos]
+    hex_rows = repo.list_hexagonos()
+    hexes = [(h["h3_index"], hex_polygon(h["h3_index"])) for h in hex_rows]
     apportioned = area_apportion(setores, hexes)
 
-    # Renda ponderada pela população rateada do setor (não usar densidade).
+    hex_geoms = [g for _h, g in hexes]
+    tree = STRtree(hex_geoms) if hex_geoms else None
     renda_acc: dict[str, list[tuple[float, float]]] = {}
-    for feat in data["features"]:
-        props = feat.get("properties") or {}
-        sid = str(props.get("setor_id") or props.get("CD_SETOR") or "")
-        renda = renda_por_setor.get(sid)
-        if renda is None:
-            raw = props.get("renda_media")
-            renda = float(raw) if raw is not None else None
-        if renda is None:
+    for sid, setor_g, pop, renda_csv, renda_prop in setor_geoms:
+        renda = renda_csv
+        if renda is None and renda_prop is not None:
+            renda = float(renda_prop)
+        if renda is None or setor_g.is_empty:
             continue
-        setor_g = shape(feat["geometry"])
-        pop = float(props.get("populacao") or 0)
-        if setor_g.area == 0:
+        setor_a = geodesic_area_m2(setor_g)
+        if setor_a == 0 or tree is None:
             continue
-        for h3_index, hex_g in hexes:
+        for idx in tree.query(setor_g):
+            h3_index, hex_g = hexes[int(idx)]
             inter = setor_g.intersection(hex_g)
             if inter.is_empty:
                 continue
-            w = pop * (inter.area / setor_g.area)
+            w = pop * (geodesic_area_m2(inter) / setor_a)
             renda_acc.setdefault(h3_index, []).append((renda, w))
 
     demo_rows = []
@@ -71,7 +72,7 @@ def run_ibge(store: MemoryStore | None = None, settings: Settings | None = None)
         hid = rec["h3_index"]
         pop = rec["populacao"]
         hex_g = hex_polygon(hid)
-        area_km2 = hex_g.area * 111.32 * 111.32  # graus² → km² aprox. (ADR)
+        area_km2 = geodesic_area_m2(hex_g) / 1_000_000.0
         dens = pop / area_km2 if area_km2 > 0 else 0.0
         weights = renda_acc.get(hid) or []
         if weights:
@@ -90,5 +91,8 @@ def run_ibge(store: MemoryStore | None = None, settings: Settings | None = None)
                 "renda_ano_base": ano,
             }
         )
-    store.replace_demografico(demo_rows)
-    return {"hexagonos_demograficos": len(demo_rows), "com_renda": sum(1 for r in demo_rows if r["renda_media"] is not None)}
+    repo.replace_demografico(demo_rows)
+    return {
+        "hexagonos_demograficos": len(demo_rows),
+        "com_renda": sum(1 for r in demo_rows if r["renda_media"] is not None),
+    }

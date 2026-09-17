@@ -1,5 +1,5 @@
 -- 003_scores_imobiliario.sql
-CREATE TABLE IF NOT EXISTS convergeo.scores_imobiliario (
+CREATE TABLE IF NOT EXISTS convergeo_engine.scores_imobiliario (
   h3_index text NOT NULL,
   perfil text NOT NULL CHECK (perfil IN ('moradia', 'investidor', 'incorporadora')),
   score_total double precision,

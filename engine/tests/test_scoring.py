@@ -52,3 +52,23 @@ def test_compute_v2_renormalizes_missing_layers():
     assert row["cobertura"]["estrutural"] is True
     assert row["cobertura"]["macroeconomica"] is False
     assert row["score_total"] is not None
+
+
+def test_investidor_inverts_mercado_direction():
+    store = MemoryStore()
+    hexes = [f"h{i}" for i in range(8)]
+    store.hexagonos = [{"h3_index": h} for h in hexes]
+    store.precos_hex = [
+        {
+            "h3_index": h,
+            "mediana_m2": 1000 * (i + 1),
+            "finalidade": "venda",
+            "tipologia": "apartamento",
+        }
+        for i, h in enumerate(hexes)
+    ]
+    compute_scores_v2(store)
+    mor = {s["h3_index"]: s for s in store.scores_imobiliario if s["perfil"] == "moradia"}
+    inv = {s["h3_index"]: s for s in store.scores_imobiliario if s["perfil"] == "investidor"}
+    assert mor["h7"]["mercado"] > mor["h0"]["mercado"]
+    assert inv["h0"]["mercado"] > inv["h7"]["mercado"]

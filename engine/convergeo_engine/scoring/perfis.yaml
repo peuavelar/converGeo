@@ -5,15 +5,31 @@ perfis:
       macroeconomica: 0.25
       acessibilidade: 0.30
       mercado: 0.15
+    camadas:
+      estrutural: { direcao: positiva }
+      macroeconomica: { direcao: positiva }
+      acessibilidade: { direcao: positiva }
+      mercado: { direcao: positiva }
   investidor:
     pesos:
       estrutural: 0.20
       macroeconomica: 0.20
       acessibilidade: 0.20
       mercado: 0.40
+    camadas:
+      estrutural: { direcao: positiva }
+      macroeconomica: { direcao: positiva }
+      acessibilidade: { direcao: positiva }
+      # Menor R$/m² (desconto relativo) → nota de mercado maior. ADR 0009.
+      mercado: { direcao: negativa }
   incorporadora:
     pesos:
       estrutural: 0.25
       macroeconomica: 0.20
       acessibilidade: 0.15
       mercado: 0.40
+    camadas:
+      estrutural: { direcao: positiva }
+      macroeconomica: { direcao: positiva }
+      acessibilidade: { direcao: positiva }
+      mercado: { direcao: positiva }
