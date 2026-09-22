@@ -5,6 +5,15 @@ Todas as mudanças relevantes do frontend ConverGeo.
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 Versionamento: [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.3.2] — 2026-09-21
+
+### Fixed
+- Modo Negócio na Vercel: `/score` e `/top` deixam de depender do Render quebrado
+- Respostas do motor remoto com `detail`/erro de banco não são mais reencaminhadas ao browser
+
+### Added
+- Fallback demo (paridade `seed_demo`) com `"demo": true` e aviso no header
+
 ## [1.3.0] — 2026-09-16
 
 ### Added
@@ -48,6 +57,7 @@ Versionamento: [SemVer](https://semver.org/lang/pt-BR/).
 
 - Release inicial MapLibre + Deck.gl + mocks Salvador
 
+[1.3.2]: https://github.com/peuavelar/converGeo/releases/tag/v1.3.2
 [1.3.0]: https://github.com/peuavelar/converGeo/releases/tag/v1.3.0
 [1.2.0]: https://github.com/peuavelar/converGeo/releases/tag/v1.2.0
 [1.1.0]: https://github.com/peuavelar/converGeo/releases/tag/v1.1.0

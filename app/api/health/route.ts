@@ -8,7 +8,7 @@ export async function GET() {
   const payload: Record<string, unknown> = {
     ok: true,
     service: "convergeo-web",
-    version: "1.3.0",
+    version: "1.3.2",
     time: new Date().toISOString(),
   };
   // Em produção não publica origem interna do motor nem modo de dados.

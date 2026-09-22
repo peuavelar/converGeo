@@ -82,6 +82,18 @@ const nextConfig: NextConfig = {
 
     return [
       {
+        source: "/backend/score",
+        destination: "/api/negocio/score",
+      },
+      {
+        source: "/backend/top",
+        destination: "/api/negocio/top",
+      },
+      {
+        source: "/backend/health",
+        destination: "/api/negocio/health",
+      },
+      {
         source: "/backend/:path*",
         destination: `${destinationBase}/:path*`,
       },
