@@ -1,5 +1,3 @@
-import { H3HexagonLayer } from "@deck.gl/geo-layers";
-import { cellToBoundary } from "h3-js";
 import {
   ScatterplotLayer,
   PathLayer,
@@ -7,6 +5,7 @@ import {
   TextLayer,
   IconLayer,
 } from "@deck.gl/layers";
+import { h3ToLngLatRing } from "../../lib/negocio/hexPolygon";
 import { radiusCirclePolygon } from "../services/nearbyPlaces";
 import type { NearbyFilters, NearbyPlace } from "../services/nearbyPlaces";
 import type { LatLng, RouteLeg } from "../services/routing";
@@ -197,22 +196,18 @@ export function buildNegocioLayers(o: NegocioLayerOpts) {
   const score = (d: { breakdown?: { estrutural?: number; macroeconomico?: number; comportamental?: number }; h3_index?: string }) =>
     getDynamicScore(d, o.weights);
 
-  // Garante h3-js no bundle do mapa (peer do H3HexagonLayer).
-  void cellToBoundary;
-
   return [
-    new H3HexagonLayer({
+    new PolygonLayer({
       id: "h3-hexagon-layer",
       data: o.visibleHexData,
       pickable: true,
       extruded: true,
-      highPrecision: true,
       elevationScale: 50,
       stroked: true,
       filled: true,
+      wireframe: false,
       lineWidthMinPixels: 1,
-      coverage: 0.95,
-      getHexagon: (d: { h3_index: string }) => d.h3_index,
+      getPolygon: (d: { h3_index: string }) => h3ToLngLatRing(d.h3_index),
       getElevation: (d: { breakdown?: { estrutural?: number; macroeconomico?: number; comportamental?: number } }) =>
         score(d) * 10,
       getFillColor: (d: { breakdown?: { estrutural?: number; macroeconomico?: number; comportamental?: number } }) => {
@@ -227,10 +222,11 @@ export function buildNegocioLayers(o: NegocioLayerOpts) {
         if (s >= 4) return [245, 158, 11, 200];
         return [239, 68, 68, 200];
       },
-      getLineColor: () => [255, 255, 255, 50],
+      getLineColor: () => [255, 255, 255, 80],
       updateTriggers: {
         getElevation: [demografia, mercado, fluxo],
         getFillColor: [demografia, mercado, fluxo, o.colorMode],
+        getPolygon: [o.visibleHexData.length],
       },
     }),
     new ScatterplotLayer({

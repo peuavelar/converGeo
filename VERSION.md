@@ -9,6 +9,7 @@
 - `/backend/score`, `/backend/top` e `/backend/health` passam a ser servidos pela Vercel
 - Tenta o Render; em 5xx/timeout usa o mesmo seed_demo do engine, com `"demo": true`
 - Erros de banco do Supabase **não** vazam no JSON público
+- Hexágonos H3 no mapa via `PolygonLayer` + `h3-js` (não depende do `H3HexagonLayer` no bundle da Vercel)
 
 ## Produção
 - Front: Vercel (`convergeo-front`)

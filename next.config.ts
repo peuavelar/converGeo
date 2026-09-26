@@ -11,8 +11,8 @@ const nextConfig: NextConfig = {
     optimizePackageImports: [
       "@deck.gl/core",
       "@deck.gl/layers",
-      "@deck.gl/geo-layers",
       "@deck.gl/react",
+      "h3-js",
       "maplibre-gl",
     ],
   },
