@@ -744,6 +744,12 @@ export default function App() {
       setPropertyType(defaultPropertyType(mode));
       setSearchError("");
       setMobilePane("content");
+      if (mode === "negocio") {
+        setViewMode("heatmap");
+        setLastCoordinate(null);
+      } else {
+        setViewMode(null);
+      }
       setViewState((vs) =>
         mode === "negocio"
           ? {

@@ -1,20 +1,56 @@
+import { clientScoreAt, clientTop, type ClientHex } from "./clientHexFallback";
+
 type LatLng = { lat: number; lng: number };
 
+export type NegocioHex = {
+  h3_index: string;
+  lat: number;
+  lng: number;
+  segmento?: string;
+  score_total?: number;
+  breakdown?: {
+    estrutural?: number;
+    macroeconomico?: number;
+    comportamental?: number;
+  };
+  demo?: boolean;
+};
+
 function apiBase(): string {
-  const raw = (process.env.NEXT_PUBLIC_API_URL || "/backend").replace(/\/$/, "");
-  if (/localhost|127\.0\.0\.1|0\.0\.0\.0/i.test(raw)) {
-    return "/backend";
+  return "/api/negocio";
+}
+
+async function jsonGet(url: string): Promise<Record<string, unknown> | null> {
+  try {
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!res.ok) return null;
+    const data = (await res.json()) as Record<string, unknown>;
+    if (!data || typeof data !== "object" || "detail" in data) return null;
+    return data;
+  } catch {
+    return null;
   }
-  return raw;
 }
 
-async function jsonGet(url: string) {
-  const res = await fetch(url);
-  return res.json();
+function asHexList(data: Record<string, unknown> | null): NegocioHex[] {
+  if (!data || data.status !== "sucesso") return [];
+  const recs = data.recomendacoes;
+  if (!Array.isArray(recs)) {
+    if (typeof data.h3_index === "string") {
+      return [data as unknown as NegocioHex];
+    }
+    return [];
+  }
+  return recs.filter(
+    (row): row is NegocioHex =>
+      Boolean(row) &&
+      typeof row === "object" &&
+      typeof (row as NegocioHex).h3_index === "string",
+  );
 }
 
-function okList(data: { status?: string; recomendacoes?: unknown[] }) {
-  return data.status === "sucesso" ? data.recomendacoes || [] : [];
+function fromClient(rows: ClientHex[]): NegocioHex[] {
+  return rows;
 }
 
 /** Pins sintéticos de concorrência a partir do score macro. */
@@ -42,25 +78,33 @@ export async function fetchNegocioHex(opts: {
   segment: string;
   lastCoordinate: LatLng | null;
   compareLocations: LatLng[];
-}): Promise<{ hexData: any[]; competitorPins: { lat: number; lng: number }[] }> {
+}): Promise<{ hexData: NegocioHex[]; competitorPins: { lat: number; lng: number }[] }> {
   const base = apiBase();
   const { viewMode, segment, lastCoordinate, compareLocations } = opts;
 
-  if (viewMode === "heatmap") {
-    const data = await jsonGet(`${base}/top?segmento=${segment}&limit=300`);
-    return { hexData: okList(data), competitorPins: [] };
-  }
-
-  if (viewMode === "top") {
-    const data = await jsonGet(`${base}/top?segmento=${segment}&limit=5`);
-    return { hexData: okList(data), competitorPins: [] };
+  if (viewMode === "heatmap" || viewMode === "top") {
+    const limit = viewMode === "heatmap" ? 300 : 5;
+    const data = await jsonGet(
+      `${base}/top?segmento=${encodeURIComponent(segment)}&limit=${limit}`,
+    );
+    const hexData = asHexList(data);
+    if (hexData.length) return { hexData, competitorPins: [] };
+    return { hexData: fromClient(clientTop(segment, limit)), competitorPins: [] };
   }
 
   if (viewMode === "single" && lastCoordinate) {
     const data = await jsonGet(
-      `${base}/score?lat=${lastCoordinate.lat}&lng=${lastCoordinate.lng}&segmento=${segment}`,
+      `${base}/score?lat=${lastCoordinate.lat}&lng=${lastCoordinate.lng}&segmento=${encodeURIComponent(segment)}`,
     );
-    const hexData = data.status === "sucesso" ? [data] : [];
+    let hexData = asHexList(data);
+    if (!hexData.length) {
+      const local = clientScoreAt(
+        lastCoordinate.lat,
+        lastCoordinate.lng,
+        segment,
+      );
+      hexData = local ? [local] : [];
+    }
     return {
       hexData,
       competitorPins: hexData[0] ? competitorPinsFromHex(hexData[0]) : [],
@@ -69,14 +113,17 @@ export async function fetchNegocioHex(opts: {
 
   if (viewMode === "compare" && compareLocations.length === 2) {
     const results = await Promise.all(
-      compareLocations.map((loc) =>
-        jsonGet(
-          `${base}/score?lat=${loc.lat}&lng=${loc.lng}&segmento=${segment}`,
-        ),
-      ),
+      compareLocations.map(async (loc) => {
+        const data = await jsonGet(
+          `${base}/score?lat=${loc.lat}&lng=${loc.lng}&segmento=${encodeURIComponent(segment)}`,
+        );
+        const list = asHexList(data);
+        if (list[0]) return list[0];
+        return clientScoreAt(loc.lat, loc.lng, segment);
+      }),
     );
     return {
-      hexData: results.filter((d) => d.status === "sucesso"),
+      hexData: results.filter((d): d is NegocioHex => Boolean(d)),
       competitorPins: [],
     };
   }

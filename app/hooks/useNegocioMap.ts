@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { FlyToInterpolator } from "@deck.gl/core";
 import type { AppMode } from "../utils/realEstate";
-import { fetchNegocioHex } from "../../lib/negocio/fetchHexScores";
+import { fetchNegocioHex, type NegocioHex } from "../../lib/negocio/fetchHexScores";
 import { getDynamicScore, type ScoreWeights } from "../utils/dynamicScore";
 import type { SearchHistoryItem } from "../utils/constants";
 
@@ -63,7 +63,7 @@ export function useNegocioHexData(opts: {
     weights,
   } = opts;
 
-  const [hexData, setHexData] = useState<any[]>([]);
+  const [hexData, setHexData] = useState<NegocioHex[]>([]);
   const [loading, setLoading] = useState(false);
   const [competitorPins, setCompetitorPins] = useState<LatLng[]>([]);
   const [addressMap, setAddressMap] = useState<Record<string, string>>({});

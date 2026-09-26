@@ -1,4 +1,5 @@
 import { H3HexagonLayer } from "@deck.gl/geo-layers";
+import { cellToBoundary } from "h3-js";
 import {
   ScatterplotLayer,
   PathLayer,
@@ -21,6 +22,7 @@ import {
   ROUTE_ORIGIN_ICON,
 } from "../utils/mapMarkerIcons";
 import { getDynamicScore, type ScoreWeights } from "../utils/dynamicScore";
+import type { NegocioHex } from "../../lib/negocio/fetchHexScores";
 
 type ImovelLayerOpts = {
   nearbyCenter: LatLng | null;
@@ -184,7 +186,7 @@ export function buildImovelLayers(o: ImovelLayerOpts) {
 }
 
 type NegocioLayerOpts = {
-  visibleHexData: any[];
+  visibleHexData: NegocioHex[];
   competitorPins: LatLng[];
   colorMode: "total" | "ocean";
   weights: ScoreWeights;
@@ -192,7 +194,11 @@ type NegocioLayerOpts = {
 
 export function buildNegocioLayers(o: NegocioLayerOpts) {
   const { demografia, mercado, fluxo } = o.weights;
-  const score = (d: any) => getDynamicScore(d, o.weights);
+  const score = (d: { breakdown?: { estrutural?: number; macroeconomico?: number; comportamental?: number }; h3_index?: string }) =>
+    getDynamicScore(d, o.weights);
+
+  // Garante h3-js no bundle do mapa (peer do H3HexagonLayer).
+  void cellToBoundary;
 
   return [
     new H3HexagonLayer({
@@ -200,14 +206,16 @@ export function buildNegocioLayers(o: NegocioLayerOpts) {
       data: o.visibleHexData,
       pickable: true,
       extruded: true,
+      highPrecision: true,
       elevationScale: 50,
       stroked: true,
       filled: true,
       lineWidthMinPixels: 1,
       coverage: 0.95,
-      getHexagon: (d: any) => d.h3_index,
-      getElevation: (d: any) => score(d) * 10,
-      getFillColor: (d: any) => {
+      getHexagon: (d: { h3_index: string }) => d.h3_index,
+      getElevation: (d: { breakdown?: { estrutural?: number; macroeconomico?: number; comportamental?: number } }) =>
+        score(d) * 10,
+      getFillColor: (d: { breakdown?: { estrutural?: number; macroeconomico?: number; comportamental?: number } }) => {
         if (o.colorMode === "ocean") {
           const s = d.breakdown?.macroeconomico || 0;
           if (s >= 7) return [14, 165, 233, 200];
