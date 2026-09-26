@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Computer-use / preview em 127.0.0.1 (só afeta `next dev`)
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   // Não publica source maps no browser (dificulta leitura do código-fonte original)
   productionBrowserSourceMaps: false,
   poweredByHeader: false,
