@@ -155,40 +155,20 @@ Recomendação Comprar no Demo Day: **manter mocks + 1 CSV/VRSync de parceiro re
 
 ---
 
-## 6. O que preciso que você valide
+## 6. Validação (respondida 2026-09-27)
 
-Marque sim/não:
+1. Espelho no Demo Day — **Sim**, mas **criar o banco nosso do zero**.  
+2. Acesso ao Supabase do Thiago — **Não**.  
+3. Limitações no pitch — **Sim**; manter diversidade de segmentos; dados oficiais depois.  
+4. Comprar — **Não** (mocks + OSM).  
+5. Sem scrape — **Sim**.  
+6. Lauro — **Não** neste momento.
 
-1. **Espelho Thiago no Demo Day (Fase A)?**  
-   - [ ] Sim, pedir dump das 5 tabelas  
-   - [ ] Não; só seed demo até o ETL nosso  
-
-2. **Thiago ainda tem o Supabase no ar?**  
-   - [ ] Sim — ele manda `pg_dump` (preferido) ou URL **read-only** por canal seguro  
-   - [ ] Não — Fase A inviável  
-
-3. **Aceitamos no pitch as limitações** (só Salvador, 4 segmentos, Censo 2022, renda=densidade no lote dele, CNPJ parcial, geocode por bairro)?  
-   - [ ] Sim, com banner explícito  
-   - [ ] Não — aí não vale espelhar; ir para Fase B  
-
-4. **Comprar no Demo Day**  
-   - [ ] Mocks + OSM (como hoje)  
-   - [ ] + 1 feed VRSync/CSV de parceiro (nome do parceiro: ________)  
-   - [ ] Procurar CRM (Vista/Kenlo) — só se o prazo fechar  
-
-5. **Proibido no Demo Day (confirmar)**  
-   - [ ] Sem GeckoAPI / scrape ZAP / OLX / VivaReal  
-
-6. **Lauro de Freitas**  
-   - [ ] Fora do Demo Day  
-   - [ ] Obrigatório (implica Fase B, não só espelho)
+Implementação: `docs/BANCO_BOOTSTRAP.md` + `python -m convergeo_engine.cli bootstrap`.
 
 ---
 
-## 7. Bloqueios (não são código)
+## 7. Bloqueio restante (ops, não código)
 
-- Dump ou acesso read-only do banco do Thiago.  
-- Novo `DATABASE_URL` no Render (o tenant atual não existe).  
-- Se quiserem anúncio real: ficheiro VRSync/CSV ou credencial de CRM.
-
-Quando esses três pontos voltarem preenchidos, o próximo commit liga o espelho — sem reescrever o mapa.
+- Criar projeto Supabase (PostGIS) e colar `DATABASE_URL` no Render.  
+- Sem isso o motor em produção continua a cair no fallback demo da Vercel.

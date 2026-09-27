@@ -7,10 +7,13 @@ from pathlib import Path
 from convergeo_engine.api.app import migrate
 from convergeo_engine.config import ENGINE_ROOT, get_settings
 from convergeo_engine.etl import run_all
+from convergeo_engine.etl.bbox_grade import run_bbox_grade
 from convergeo_engine.etl.cnpj import run_cnpj
 from convergeo_engine.etl.grade import run_grade
 from convergeo_engine.etl.ibge import run_ibge
-from convergeo_engine.etl.osm import run_osm
+from convergeo_engine.etl.osm import BBOX_SALVADOR, run_osm
+from convergeo_engine.pg_store import persist_store
+from convergeo_engine.scoring.v1_negocio import compute_v1_negocio
 from convergeo_engine.marketplace.aggregate import aggregate
 from convergeo_engine.marketplace.ingest import ingest_csv, ingest_vrsync
 from convergeo_engine.scoring.compute import compute_scores_v2
@@ -54,7 +57,16 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("migrate")
     etl = sub.add_parser("etl")
-    etl.add_argument("step", choices=["grade", "ibge", "cnpj", "osm", "all"])
+    etl.add_argument(
+        "step",
+        choices=["grade", "grade-bbox", "ibge", "cnpj", "osm", "all"],
+    )
+    boot = sub.add_parser("bootstrap")
+    boot.add_argument(
+        "--skip-osm",
+        action="store_true",
+        help="Só grade + scores (útil em CI sem Overpass)",
+    )
     mkt = sub.add_parser("marketplace")
     mkt.add_argument("step", choices=["aggregate", "sync-feeds", "ingest-csv"])
     mkt.add_argument("--file", default="")
@@ -71,13 +83,50 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(migrate(), ensure_ascii=False))
         return 0
     if args.cmd == "etl":
-        fn = {"grade": run_grade, "ibge": run_ibge, "cnpj": run_cnpj, "osm": run_osm, "all": run_all}[
-            args.step
-        ]
-        result = fn(store)
+        if args.step == "grade-bbox":
+            result = run_bbox_grade(store)
+        else:
+            fn = {
+                "grade": run_grade,
+                "ibge": run_ibge,
+                "cnpj": run_cnpj,
+                "osm": run_osm,
+                "all": run_all,
+            }[args.step]
+            result = fn(store)
         if args.step == "all":
             write_fase1_report(result)
         print(json.dumps(result, ensure_ascii=False, default=str))
+        return 0
+    if args.cmd == "bootstrap":
+        from convergeo_engine.store import MemoryStore
+
+        mem = MemoryStore()
+        if get_settings().database_url:
+            migrate()
+        grade = run_bbox_grade(mem)
+        osm: dict = {"pois": 0, "skipped": True}
+        if not args.skip_osm:
+            try:
+                osm = run_osm(mem, bbox=BBOX_SALVADOR)
+            except Exception as exc:
+                osm = {"pois": 0, "error": str(exc)}
+        scores = compute_v1_negocio(mem)
+        persisted = None
+        if get_settings().database_url:
+            persisted = persist_store(mem)
+        else:
+            store.replace_hexagonos(mem.hexagonos)
+            store.replace_osm(mem.osm_pois)
+            for row in mem.scores:
+                store.upsert_score(row)
+        print(
+            json.dumps(
+                {"grade": grade, "osm": osm, "scores": scores, "persist": persisted},
+                ensure_ascii=False,
+                default=str,
+            )
+        )
         return 0
     if args.cmd == "marketplace":
         if args.step == "aggregate":

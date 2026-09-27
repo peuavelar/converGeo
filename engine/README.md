@@ -9,7 +9,11 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 cp .env.example .env
 pytest
+# Banco local (mesmo modelo do Thiago: Postgres + PostGIS + schema convergeo)
+docker compose up -d
+export DATABASE_URL=postgresql://postgres:convergeo@127.0.0.1:5432/convergeo
 python -m convergeo_engine.cli migrate
+python -m convergeo_engine.cli bootstrap   # grade Salvador + OSM + scores dos 17 segmentos
 python -m convergeo_engine.cli serve   # http://127.0.0.1:8000
 ```
 

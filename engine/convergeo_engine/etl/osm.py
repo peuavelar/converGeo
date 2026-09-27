@@ -21,34 +21,61 @@ QUERY = """
   way["leisure"="park"]({bbox});
   node["amenity"="school"]({bbox});
   way["amenity"="school"]({bbox});
-  node["amenity"~"hospital|clinic|doctors"]({bbox});
-  node["shop"="supermarket"]({bbox});
-  node["amenity"="bank"]({bbox});
+  node["amenity"="university"]({bbox});
+  node["amenity"="college"]({bbox});
+  node["amenity"~"hospital|clinic|doctors|pharmacy|restaurant|cafe|fast_food|bar|fuel|bank"]({bbox});
+  node["amenity"="fuel"]({bbox});
+  node["shop"~"supermarket|convenience|bakery|clothes|hairdresser|beauty|optician|doityourself|hardware|stationery|books|pet"]({bbox});
+  node["shop"="chemist"]({bbox});
+  node["leisure"~"fitness_centre|sports_centre"]({bbox});
+  node["tourism"~"hotel|guest_house"]({bbox});
+  node["office"="estate_agent"]({bbox});
 );
 out center;
 """
 
 # Bbox RMS aproximada (Salvador + Lauro). A VERIFICAR vs malha oficial no ETL real.
 BBOX = "-13.08,-38.65,-12.80,-38.25"
+# Recorte do bootstrap (mesmo bbox do Thiago). south,west,north,east
+BBOX_SALVADOR = "-13.0108,-38.5762,-12.7442,-38.2891"
 
 
 def _category(tags: dict[str, str]) -> str:
+    amenity = tags.get("amenity") or ""
+    shop = tags.get("shop") or ""
+    leisure = tags.get("leisure") or ""
+    tourism = tags.get("tourism") or ""
+    office = tags.get("office") or ""
     if tags.get("highway") == "bus_stop":
         return "bus_stop"
     if tags.get("public_transport") == "station":
         return "station"
     if tags.get("natural") == "beach":
         return "beach"
-    if tags.get("leisure") == "park":
+    if leisure == "park":
         return "park"
-    if tags.get("amenity") == "school":
-        return "school"
-    if tags.get("amenity") in {"hospital", "clinic", "doctors"}:
+    if amenity in {"school", "university", "college"}:
+        return amenity if amenity != "school" else "school"
+    if amenity in {"hospital", "clinic", "doctors"}:
         return "saude"
-    if tags.get("shop") == "supermarket":
-        return "supermercado"
-    if tags.get("amenity") == "bank":
+    if amenity == "pharmacy" or shop == "chemist":
+        return "pharmacy"
+    if amenity in {"restaurant", "cafe", "fast_food", "bar"}:
+        return amenity
+    if amenity == "fuel":
+        return "fuel"
+    if amenity == "bank":
         return "banco"
+    if shop in {"supermarket", "convenience"}:
+        return "supermercado" if shop == "supermarket" else "convenience"
+    if shop:
+        return shop
+    if leisure in {"fitness_centre", "sports_centre"}:
+        return "fitness"
+    if tourism in {"hotel", "guest_house"}:
+        return tourism
+    if office == "estate_agent":
+        return "estate_agent"
     return "outro"
 
 
@@ -79,11 +106,12 @@ def run_osm(
     store: MemoryStore | None = None,
     settings: Settings | None = None,
     payload: dict[str, Any] | None = None,
+    bbox: str | None = None,
 ) -> dict:
     settings = settings or get_settings()
     store = store or get_store()
     if payload is None:
-        q = QUERY.replace("{bbox}", BBOX)
+        q = QUERY.replace("{bbox}", bbox or BBOX)
         with httpx.Client(timeout=120.0) as client:
             res = client.post(
                 settings.osm_overpass_url,

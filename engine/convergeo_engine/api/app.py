@@ -64,6 +64,9 @@ def health():
         body["hexagonos"] = len(store.hexagonos)
         body["scores"] = len(store.scores)
         body["imoveis"] = len(store.imoveis)
+    elif settings.database_url and hasattr(store, "counts"):
+        body.update(store.counts())
+        body["fonte"] = "convergeo.scores"
     return body
 
 

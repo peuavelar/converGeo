@@ -1,0 +1,49 @@
+# Banco nosso no modelo Thiago (bootstrap)
+
+Decisões validadas (2026-09-27):
+
+1. Criar o banco **do zero** (sem dump do Thiago).  
+2. Mesmo modelo: Postgres + PostGIS + schema `convergeo` + `GET /score` + `GET /top`.  
+3. Manter os **17 segmentos** do front. IBGE/Receita entram depois.  
+4. Comprar continua mock + OSM.  
+5. Sem scrape de portal.  
+6. Só Salvador no Demo Day.
+
+## O que o bootstrap grava agora
+
+| Tabela | Fonte atual | Depois |
+|--------|-------------|--------|
+| `hexagonos` | Bbox Salvador res 8 (`fonte=bbox_salvador`, ~1077 células) | Malha IBGE oficial |
+| `osm_pois` | Overpass | Mesma API, recorte maior |
+| `scores` | Só camada comportamental (OSM), 17 segmentos | + estrutural (IBGE) + macro (CNPJ) |
+| `demografico` / `empresas` | Vazias | ETL oficial (ZIPs, sem versionar no git) |
+
+## Subir local
+
+```bash
+cd engine
+docker compose up -d
+export DATABASE_URL=postgresql://postgres:convergeo@127.0.0.1:5432/convergeo
+python -m pip install -e ".[dev]"
+python -m convergeo_engine.cli migrate
+python -m convergeo_engine.cli bootstrap
+curl "http://127.0.0.1:8000/top?segmento=food_service&limit=5"
+```
+
+(`serve` em outro terminal.)
+
+## Subir no Supabase + Render
+
+1. Projeto Supabase novo (região `sa-east-1`).  
+2. Database → Extensions → ligar **postgis**.  
+3. Copiar a URI (pooler 6543 ou direto 5432) para `DATABASE_URL` **só** no Render — nunca no git.  
+4. No Render, o start deve ser:
+
+```bash
+python -m convergeo_engine.cli migrate && python -m convergeo_engine.cli bootstrap && python -m convergeo_engine.cli serve
+```
+
+`bootstrap` é idempotente (UPSERT). Overpass pode falhar; a grade e os scores (neutros 5.0 se não houver POI) ainda gravam.
+
+5. Conferir `GET https://<render>/health` com `hexagonos` > 0 e `scores` > 0.  
+6. Vercel: `BACKEND_ORIGIN` = URL do Render. O BFF já faz fallback demo se o motor cair.

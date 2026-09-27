@@ -64,7 +64,14 @@ _STORE: MemoryStore | None = None
 def get_store() -> MemoryStore:
     global _STORE
     if _STORE is None:
-        _STORE = MemoryStore()
+        from convergeo_engine.config import get_settings
+
+        if get_settings().database_url:
+            from convergeo_engine.pg_store import PostgresStore
+
+            _STORE = PostgresStore()  # type: ignore[assignment]
+        else:
+            _STORE = MemoryStore()
     return _STORE
 
 
