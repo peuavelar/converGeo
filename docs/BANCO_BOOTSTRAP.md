@@ -39,6 +39,11 @@ curl "http://127.0.0.1:8000/top?segmento=food_service&limit=5"
 | **API** (`@supabase/server`) | `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `SUPABASE_JWKS_URL` | Auth, REST, painel JS |
 | **Postgres** (motor / hexágonos) | `DATABASE_URL` (URI Session/Direct) | Schema `convergeo`, PostGIS, `/score` `/top` |
 
+MCP do projeto (Cursor local): `.cursor/mcp.json` aponta para
+`https://mcp.supabase.com/mcp?project_ref=jhbzotgjpfxfajvjgnuu`.
+No Cursor do teu Mac/PC: **Approve** o servidor → `agent mcp login supabase`.
+Neste Cloud Agent o MCP remoto **não autentica sozinho**.
+
 As API keys **não** substituem `DATABASE_URL`. O mapa H3 só enche depois do Postgres.
 
 Handshake da API (com `.env.local`): `GET /api/supabase/health`.
