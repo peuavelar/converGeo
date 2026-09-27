@@ -75,6 +75,13 @@ def main(argv: list[str] | None = None) -> int:
     scoring.add_argument("step", choices=["compute", "validate"])
     sub.add_parser("seed-demo")
     sub.add_parser("db-ping")
+    exp = sub.add_parser("export-sql")
+    exp.add_argument(
+        "--dir",
+        default=str(ENGINE_ROOT / "db" / "seed"),
+        help="Pasta de seed_hexagonos.sql e seed_scores.sql",
+    )
+    exp.add_argument("--skip-osm", action="store_true")
     sub.add_parser("serve")
 
     args = parser.parse_args(argv)
@@ -209,6 +216,28 @@ def main(argv: list[str] | None = None) -> int:
             body["error"] = str(exc).split("password")[0].strip()
             print(json.dumps(body, ensure_ascii=False))
             return 1
+    if args.cmd == "export-sql":
+        from convergeo_engine.export_sql import write_export
+        from convergeo_engine.store import MemoryStore
+
+        mem = MemoryStore()
+        grade = run_bbox_grade(mem)
+        osm: dict = {"pois": 0, "skipped": True}
+        if not args.skip_osm:
+            try:
+                osm = run_osm(mem, bbox=BBOX_SALVADOR)
+            except Exception as exc:
+                osm = {"pois": 0, "error": str(exc)}
+        scores = compute_v1_negocio(mem)
+        written = write_export(mem, Path(args.dir))
+        print(
+            json.dumps(
+                {"grade": grade, "osm": osm, "scores": scores, "files": written},
+                ensure_ascii=False,
+                default=str,
+            )
+        )
+        return 0
     if args.cmd == "serve":
         import uvicorn
 

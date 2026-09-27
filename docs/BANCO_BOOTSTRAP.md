@@ -70,6 +70,21 @@ python -m convergeo_engine.cli db-ping
 Esperado: `{"ok": true, "mode": "session"|"direct", "postgis": "..."}`.  
 Só depois: `migrate` + `bootstrap`.
 
+## Atalho sem URI (SQL Editor)
+
+Enquanto `DATABASE_URL` e o MCP não autenticam neste agente:
+
+1. Supabase → **SQL Editor** → colar `engine/db/supabase_init.sql` → Run.  
+2. Gerar a grade (neste repo):
+
+```bash
+cd engine
+python -m convergeo_engine.cli export-sql --skip-osm
+```
+
+3. Correr `engine/db/seed/seed_hexagonos.sql` e `seed_scores.sql` no mesmo Editor.  
+4. Table Editor: `convergeo.hexagonos` deve ter ~1077 linhas.
+
 ## Subir no Supabase + Render
 
 1. Projeto Supabase novo (região `sa-east-1`).  
