@@ -81,7 +81,7 @@ def export_scores_sql(store: MemoryStore) -> str:
         "-- Scores v1 (17 segmentos). Camadas IBGE/RF ainda NULL.",
         "INSERT INTO convergeo.scores",
         "  (h3_index, segmento, score_estrutural, score_macroeconomico,",
-        "   score_comportamental, score_total, fonte, calculado_em)",
+        "   score_comportamental, score_total, fonte)",
         "VALUES",
         ",\n".join(rows),
         "ON CONFLICT (h3_index, segmento) DO UPDATE SET",

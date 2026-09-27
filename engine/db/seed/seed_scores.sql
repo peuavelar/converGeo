@@ -1,7 +1,7 @@
 -- Scores v1 (17 segmentos). Camadas IBGE/RF ainda NULL.
 INSERT INTO convergeo.scores
   (h3_index, segmento, score_estrutural, score_macroeconomico,
-   score_comportamental, score_total, fonte, calculado_em)
+   score_comportamental, score_total, fonte)
 VALUES
 ('888116b99bfffff','food_service',NULL,NULL,5.0,5.0,'osm_comportamental'),
 ('888116aa89fffff','food_service',NULL,NULL,5.0,5.0,'osm_comportamental'),
