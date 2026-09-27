@@ -6,13 +6,20 @@ from contextlib import contextmanager
 from typing import Any, Iterable, Iterator, Sequence
 
 from convergeo_engine.config import Settings, get_settings
+from convergeo_engine.dsn import normalize_database_url
 
 
 def _connect(url: str):
     import psycopg2
     from psycopg2.pool import ThreadedConnectionPool
 
-    return ThreadedConnectionPool(minconn=1, maxconn=8, dsn=url)
+    dsn = normalize_database_url(url)
+    return ThreadedConnectionPool(
+        minconn=1,
+        maxconn=8,
+        dsn=dsn,
+        connect_timeout=15,
+    )
 
 
 _POOL = None

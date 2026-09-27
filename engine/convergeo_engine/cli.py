@@ -74,6 +74,7 @@ def main(argv: list[str] | None = None) -> int:
     scoring = sub.add_parser("scoring")
     scoring.add_argument("step", choices=["compute", "validate"])
     sub.add_parser("seed-demo")
+    sub.add_parser("db-ping")
     sub.add_parser("serve")
 
     args = parser.parse_args(argv)
@@ -176,6 +177,38 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "seed-demo":
         print(json.dumps(seed_demo(store), ensure_ascii=False))
         return 0
+    if args.cmd == "db-ping":
+        from convergeo_engine.dsn import describe_dsn, warn_transaction_pooler
+
+        url = get_settings().database_url
+        if not url:
+            print(json.dumps({"ok": False, "error": "DATABASE_URL vazio"}))
+            return 1
+        body: dict = {"ok": False, **describe_dsn(url)}
+        warn = warn_transaction_pooler(url)
+        if warn:
+            body["warning"] = warn
+        try:
+            from convergeo_engine.db import connection
+
+            with connection() as conn:
+                cur = conn.cursor()
+                cur.execute("SELECT current_database(), current_user, version()")
+                db, user, ver = cur.fetchone()
+                body.update({"database": db, "user": user, "version": str(ver).split(",")[0]})
+                try:
+                    cur.execute("SELECT postgis_version()")
+                    body["postgis"] = cur.fetchone()[0]
+                except Exception:
+                    body["postgis"] = None
+                    conn.rollback()
+            body["ok"] = True
+            print(json.dumps(body, ensure_ascii=False))
+            return 0
+        except Exception as exc:
+            body["error"] = str(exc).split("password")[0].strip()
+            print(json.dumps(body, ensure_ascii=False))
+            return 1
     if args.cmd == "serve":
         import uvicorn
 

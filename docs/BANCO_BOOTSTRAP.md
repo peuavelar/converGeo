@@ -32,6 +32,28 @@ curl "http://127.0.0.1:8000/top?segmento=food_service&limit=5"
 
 (`serve` em outro terminal.)
 
+## 0. Conectar ao Supabase (agora)
+
+Neste ambiente **não há `DATABASE_URL`**. Sem a URI o handshake não roda.
+
+No dashboard do projeto novo:
+
+1. **Project Settings → Database → Connect** (ou o botão Connect).  
+2. Copiar a URI **Session pooler** (`*.pooler.supabase.com:5432`) **ou Direct** (`db.<ref>.supabase.co:5432`).  
+   Evite Transaction mode (`:6543`) para migrate/bootstrap.  
+3. Database → Extensions → ligar **postgis**.  
+4. Colar a URI em `DATABASE_URL` (secret do Cursor / Render). Não commitar.  
+5. Conferir:
+
+```bash
+cd engine
+export DATABASE_URL='postgresql://postgres.<ref>:<senha>@aws-0-sa-east-1.pooler.supabase.com:5432/postgres'
+python -m convergeo_engine.cli db-ping
+```
+
+Esperado: `{"ok": true, "mode": "session"|"direct", "postgis": "..."}`.  
+Só depois: `migrate` + `bootstrap`.
+
 ## Subir no Supabase + Render
 
 1. Projeto Supabase novo (região `sa-east-1`).  
