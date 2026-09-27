@@ -14,6 +14,7 @@ export async function GET() {
   // Em produção não publica origem interna do motor nem modo de dados.
   if (process.env.VERCEL !== "1" && process.env.NODE_ENV !== "production") {
     payload.dataProvider = dataSources.mode;
+    payload.supabase = Boolean(process.env.SUPABASE_URL);
     payload.osm = {
       overpass: true,
       nominatim: true,

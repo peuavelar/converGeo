@@ -32,7 +32,18 @@ curl "http://127.0.0.1:8000/top?segmento=food_service&limit=5"
 
 (`serve` em outro terminal.)
 
-## 0. Conectar ao Supabase (agora)
+## 0. Duas camadas de “conexão”
+
+| Camada | Variáveis | Para quê |
+|--------|-----------|----------|
+| **API** (`@supabase/server`) | `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `SUPABASE_JWKS_URL` | Auth, REST, painel JS |
+| **Postgres** (motor / hexágonos) | `DATABASE_URL` (URI Session/Direct) | Schema `convergeo`, PostGIS, `/score` `/top` |
+
+As API keys **não** substituem `DATABASE_URL`. O mapa H3 só enche depois do Postgres.
+
+Handshake da API (com `.env.local`): `GET /api/supabase/health`.
+
+## 0b. Conectar ao Postgres (ainda falta)
 
 Neste ambiente **não há `DATABASE_URL`**. Sem a URI o handshake não roda.
 
