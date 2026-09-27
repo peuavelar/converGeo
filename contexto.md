@@ -1,7 +1,8 @@
 # Contexto — ConverGeo Web v1.3.0
 
 > Documento de contexto para humanos e agentes de IA.  
-> Versão: **1.3.0** · Repo: [peuavelar/converGeo](https://github.com/peuavelar/converGeo) · Produção: https://convergeo-front.vercel.app
+> Versão: **1.3.0** · Repo: [peuavelar/converGeo](https://github.com/peuavelar/converGeo) · Produção: https://convergeo-front.vercel.app  
+> Check-in banco Thiago + APIs Demo Day: `docs/CHECKIN_ESPELHO_THIAGO.md`
 
 ---
 
