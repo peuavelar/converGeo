@@ -2,7 +2,7 @@
 
 **Inteligência imobiliária e geoespacial para Salvador e Lauro de Freitas (BA)**
 
-[![Version](https://img.shields.io/badge/version-1.3.0-0a0a0b)](./VERSION.md)
+[![Version](https://img.shields.io/badge/version-1.3.3-0a0a0b)](./VERSION.md)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
 [![MapLibre](https://img.shields.io/badge/MapLibre-Deck.gl-006aff)](https://maplibre.org/)
@@ -21,12 +21,12 @@ Frontend web do [ConverGeo](https://github.com/peuavelar/converGeo): mapa intera
 
 Ao trocar de modo, o mapa mostra um estado de carregamento com transição suave (evita parecer bug).
 
-## Destaques (v1.3.0)
+## Destaques (v1.3.3)
 
-- Motor Python no mesmo repo (`engine/`): ETL H3 mascarado, renda Censo 2022, CNPJ geocodificado, OSM
-- Marketplace: CSV/VRSync, preço justo etapa A, página `/anuncie`
-- Flag `NEXT_PUBLIC_MARKETPLACE_SOURCE=mock|api` (padrão mock)
-- Modo Negócio continua em `GET /score` e `GET /top`
+- Modo Negócio: heatmap H3 (bbox Salvador, 17 segmentos) via BFF `/api/negocio` → Postgres
+- Score vivo = camada OSM; ETL IBGE/CNPJ no motor, ainda sem dados no banco
+- Marketplace: CSV/VRSync e `/anuncie` no código; flag `NEXT_PUBLIC_MARKETPLACE_SOURCE=mock`
+- Contrato estável `GET /score` e `GET /top`
 
 Ver [CHANGELOG.md](./CHANGELOG.md), [VERSION.md](./VERSION.md), [contexto.md](./contexto.md) e [docs/DATA_ARCHITECTURE.md](./docs/DATA_ARCHITECTURE.md).
 
@@ -45,7 +45,7 @@ Ver [CHANGELOG.md](./CHANGELOG.md), [VERSION.md](./VERSION.md), [contexto.md](./
 ```
 converGeo/
 ├── app/
-│   ├── api/                 # BFF geo, cron benchmarks, marketplace scores
+│   ├── api/                 # BFF geo, negócio (score/top), cron, marketplace
 │   ├── components/          # mapa, marketplace, opportunity, views, zillow
 │   ├── hooks/               # nearby, negócio, scores
 │   ├── map/                 # builders de camadas Deck.gl
@@ -60,7 +60,7 @@ converGeo/
 ├── engine/                  # FastAPI + ETL + marketplace
 ├── docs/                    # arquitetura, ADRs, benchmarks
 ├── scripts/                 # seed / compare / testes
-└── package.json             # v1.3.0
+└── package.json             # v1.3.3
 ```
 
 ## Como rodar
@@ -114,7 +114,7 @@ curl http://localhost:3000/api/health
 
 | Doc | Conteúdo |
 |-----|----------|
-| [contexto.md](./contexto.md) | contexto completo da 1.3.0 (agentes / equipe) |
+| [contexto.md](./contexto.md) | pé atual do projeto |
 | [docs/RELEASE_1.2.0.md](./docs/RELEASE_1.2.0.md) | release notes detalhadas |
 | [VERSION.md](./VERSION.md) | release atual |
 | [CHANGELOG.md](./CHANGELOG.md) | histórico de versões |

@@ -5,6 +5,22 @@ Todas as mudanças relevantes do frontend ConverGeo.
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 Versionamento: [SemVer](https://semver.org/lang/pt-BR/).
 
+## [1.3.3] — 2026-09-28
+
+### Added
+- BFF Vercel lê `convergeo.scores` (Postgres Session pooler e PostgREST `public.scores`)
+- Bootstrap da grade bbox Salvador (~1077 hexes) + OSM + 17 segmentos (18309 scores)
+- Tutorial de extração (segmento → Raio-X → CSV)
+- `contexto.md` com o estado operacional atual
+
+### Changed
+- Heatmap H3: `PolygonLayer` + recorte visual da península (até 160 hexes), mapa escuro padrão
+- PWA cache `convergeo-v1.3.3`, network-first; `/api` e `/backend` sem cache
+
+### Fixed
+- Score Negócio deixa de depender do tenant Postgres morto do Render
+- SSL do pooler Supabase no cliente `pg` da Vercel
+
 ## [1.3.2] — 2026-09-21
 
 ### Fixed
@@ -57,6 +73,7 @@ Versionamento: [SemVer](https://semver.org/lang/pt-BR/).
 
 - Release inicial MapLibre + Deck.gl + mocks Salvador
 
+[1.3.3]: https://github.com/peuavelar/converGeo/releases/tag/v1.3.3
 [1.3.2]: https://github.com/peuavelar/converGeo/releases/tag/v1.3.2
 [1.3.0]: https://github.com/peuavelar/converGeo/releases/tag/v1.3.0
 [1.2.0]: https://github.com/peuavelar/converGeo/releases/tag/v1.2.0

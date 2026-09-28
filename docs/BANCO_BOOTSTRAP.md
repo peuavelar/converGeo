@@ -124,7 +124,7 @@ Para o mapa sair do 500 sem o Render:
 
 ```bash
 curl -sS https://convergeo-front.vercel.app/api/negocio/health
-# {"status":"ok","version":"1.3.2","motor":"postgres","demo":false}
+# {"status":"ok","version":"1.3.3","motor":"postgres","demo":false}
 
 curl -sSI "https://convergeo-front.vercel.app/api/negocio/top?segmento=food_service&limit=3"
 # X-ConverGeo-Source: postgres

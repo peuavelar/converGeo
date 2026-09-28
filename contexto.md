@@ -1,6 +1,6 @@
 # Contexto — ConverGeo (estado atual)
 
-Corte: **2026-09-28**. Versão **1.3.2**. Repo [peuavelar/converGeo](https://github.com/peuavelar/converGeo). Produção: https://convergeo-front.vercel.app
+Corte: **2026-09-28**. Versão **1.3.3**. Repo [peuavelar/converGeo](https://github.com/peuavelar/converGeo). Produção: https://convergeo-front.vercel.app
 
 Este arquivo descreve **o pé do projeto agora**. O que está no código e o que está no ar não são a mesma coisa.
 
@@ -193,7 +193,7 @@ cd engine && python -m convergeo_engine.cli migrate && python -m convergeo_engin
 | [docs/BENCHMARKS.md](./docs/BENCHMARKS.md) | asking, flag off |
 | [docs/CHECKIN_ESPELHO_THIAGO.md](./docs/CHECKIN_ESPELHO_THIAGO.md) | o que não copiar |
 | [engine/README.md](./engine/README.md) | CLI do motor |
-| [CHANGELOG.md](./CHANGELOG.md) / [VERSION.md](./VERSION.md) | SemVer (VERSION ainda fala Render/demo; o BFF postgres é deste ramo) |
+| [CHANGELOG.md](./CHANGELOG.md) / [VERSION.md](./VERSION.md) | SemVer 1.3.3 |
 
 ---
 

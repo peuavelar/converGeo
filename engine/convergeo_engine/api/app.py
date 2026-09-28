@@ -34,7 +34,7 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(
     title="ConverGeo Engine",
     description="Motor preditivo e marketplace (v1 compat + v2 imobiliário)",
-    version="1.3.0",
+    version="1.3.3",
     lifespan=lifespan,
 )
 
@@ -55,7 +55,7 @@ def health():
     store = get_store()
     body: dict = {
         "status": "ok",
-        "version": "1.3.0",
+        "version": "1.3.3",
         "database": bool(settings.database_url),
         "schema": settings.db_schema,
     }

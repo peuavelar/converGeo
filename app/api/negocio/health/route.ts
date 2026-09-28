@@ -8,7 +8,7 @@ export async function GET() {
   return Response.json(
     {
       status: "ok",
-      version: "1.3.2",
+      version: "1.3.3",
       motor,
       demo: motor === "demo",
       layers: {
