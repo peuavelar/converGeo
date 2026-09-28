@@ -108,12 +108,18 @@ python -m convergeo_engine.cli migrate && python -m convergeo_engine.cli bootstr
 
 ## 4. Vercel (ciclo do mapa)
 
-O BFF (`/api/negocio/score` e `/top`, rewrites `/backend/*`) lê o Postgres **antes** do Render. Sem `DATABASE_URL` na Vercel o mapa cai no motor remoto e, se esse falhar, no demo.
+O BFF (`/api/negocio/score` e `/top`, rewrites `/backend/*`) resolve **postgres → PostgREST (`public.scores`) → Render → demo**.
 
-1. Vercel → projeto **convergeo-front** → Settings → Environment Variables.  
-2. Criar `DATABASE_URL` (Production + Preview) com a URI Session **percent-encoded** e `sslmode=require`.  
-3. `BACKEND_ORIGIN` continua opcional (Render). Já não é obrigatório para o heatmap.  
-4. Redeploy da Production (a variável só entra no próximo build).  
+A Production (`master`) ainda não tem este BFF — o `/backend/score` vai ao Render do tenant morto. O Preview deste branch está atrás do SSO da Vercel.
+
+Para o mapa sair do 500 sem o Render:
+
+1. Vercel → **convergeo-front** (`prj_5EKlmx8L1mHg9Q3FMZP2upfHE4Vj`) → Environment Variables.  
+2. Production + Preview + Development:
+   - `DATABASE_URL` (URI Session percent-encoded + `sslmode=require`), **ou**
+   - `SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY` (lê `public.scores`).  
+3. Sem `VERCEL_TOKEN` neste agente o upsert automático não corre. Localmente: `VERCEL_TOKEN=… npm run vercel:env` (lê `.env.local` e faz deploy de produção deste branch).  
+4. Promover o Preview para Production **ou** mergear este PR em `master` (branch de produção Hobby).  
 5. Conferir:
 
 ```bash

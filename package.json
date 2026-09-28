@@ -10,7 +10,8 @@
     "deploy": "vercel --prod",
     "seed:benchmarks": "tsx scripts/seed-benchmarks.ts",
     "compare:scores": "tsx scripts/compare-opportunity-scores.ts",
-    "test:benchmarks": "tsx --test lib/benchmarks/rules/rules.test.ts lib/benchmarks/calibrate.test.ts lib/negocio/demoScores.test.ts lib/negocio/clientHexFallback.test.ts lib/negocio/hexPolygon.test.ts lib/negocio/pgScores.test.ts",
+    "test:benchmarks": "tsx --test lib/benchmarks/rules/rules.test.ts lib/benchmarks/calibrate.test.ts lib/negocio/demoScores.test.ts lib/negocio/clientHexFallback.test.ts lib/negocio/hexPolygon.test.ts lib/negocio/pgScores.test.ts lib/negocio/restScores.test.ts",
+    "vercel:env": "node --env-file=.env.local scripts/push-vercel-env.mjs",
     "engine:test": "python3 -m pytest engine/tests -q"
   },
   "dependencies": {

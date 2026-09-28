@@ -66,3 +66,20 @@ CREATE TABLE IF NOT EXISTS convergeo.scores (
 );
 
 CREATE INDEX IF NOT EXISTS scores_seg_total_idx ON convergeo.scores (segmento, score_total DESC);
+
+CREATE OR REPLACE VIEW public.scores AS
+SELECT
+  h3_index,
+  segmento,
+  score_estrutural,
+  score_macroeconomico,
+  score_comportamental,
+  score_total
+FROM convergeo.scores;
+
+CREATE OR REPLACE VIEW public.hexagonos AS
+SELECT h3_index, municipio_ibge, lat, lng
+FROM convergeo.hexagonos;
+
+GRANT SELECT ON public.scores TO anon, authenticated, service_role;
+GRANT SELECT ON public.hexagonos TO anon, authenticated, service_role;

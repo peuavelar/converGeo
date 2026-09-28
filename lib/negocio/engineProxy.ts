@@ -6,6 +6,7 @@ import {
   type ScoreOk,
 } from "./demoScores";
 import { pgProbe, pgScoreAt, pgTop } from "./pgScores";
+import { restProbe, restScoreAt, restTop } from "./restScores";
 
 const UPSTREAM_TIMEOUT_MS = 4000;
 
@@ -88,6 +89,8 @@ export async function resolveScore(lat: number, lng: number, segmento: string) {
   const seg = isDemoSegment(segmento) ? segmento : "food_service";
   const fromPg = await pgScoreAt(lat, lng, seg);
   if (fromPg) return { body: fromPg, source: "postgres" as const };
+  const fromRest = await restScoreAt(lat, lng, seg);
+  if (fromRest) return { body: fromRest, source: "rest" as const };
   const qs = `?lat=${encodeURIComponent(String(lat))}&lng=${encodeURIComponent(String(lng))}&segmento=${encodeURIComponent(seg)}`;
   const up = await fetchUpstream(`/score${qs}`);
   if (up) {
@@ -102,6 +105,10 @@ export async function resolveTop(segmento: string, limit: number) {
   const fromPg = await pgTop(seg, limit);
   if (fromPg?.recomendacoes.length) {
     return { body: fromPg, source: "postgres" as const };
+  }
+  const fromRest = await restTop(seg, limit);
+  if (fromRest?.recomendacoes.length) {
+    return { body: fromRest, source: "rest" as const };
   }
   const qs = `?segmento=${encodeURIComponent(seg)}&limit=${encodeURIComponent(String(limit))}`;
   const up = await fetchUpstream(`/top${qs}`);
@@ -140,9 +147,13 @@ export async function probeUpstream(): Promise<"up" | "down"> {
   return up?.status === "sucesso" || up?.status === "sem_dados" ? "up" : "down";
 }
 
-export async function probeScoreSource(): Promise<"postgres" | "remoto" | "demo"> {
+export async function probeScoreSource(): Promise<
+  "postgres" | "rest" | "remoto" | "demo"
+> {
   const pg = await pgProbe();
   if (pg === "up") return "postgres";
+  const rest = await restProbe();
+  if (rest === "up") return "rest";
   const remote = await probeUpstream();
   return remote === "up" ? "remoto" : "demo";
 }
