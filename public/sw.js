@@ -1,6 +1,6 @@
-/* ConverGeo PWA — cache leve de shell (produção). */
-const CACHE = "convergeo-v1.0.0";
-const PRECACHE = ["/", "/manifest.webmanifest", "/icons/icon-192.png"];
+/* ConverGeo PWA — shell só. Nunca cacheia /api (score/top). */
+const CACHE = "convergeo-v1.3.3";
+const PRECACHE = ["/manifest.webmanifest", "/icons/icon-192.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -22,36 +22,27 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-
-  // Network-first para navegação; cache-first para estáticos
-  if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(request, copy));
-          return res;
-        })
-        .catch(() => caches.match(request).then((r) => r || caches.match("/"))),
-    );
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/backend/")) {
     return;
   }
 
-  if (
-    url.pathname.startsWith("/_next/static/") ||
-    url.pathname.startsWith("/icons/") ||
-    url.pathname === "/sw.js"
-  ) {
-    event.respondWith(
-      caches.match(request).then(
-        (cached) =>
-          cached ||
-          fetch(request).then((res) => {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(request, copy));
-            return res;
-          }),
-      ),
-    );
+  const networkFirst = () =>
+    fetch(request)
+      .then((res) => {
+        if (res.ok && request.method === "GET") {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(request, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(request).then((r) => r || caches.match("/")));
+
+  if (request.mode === "navigate" || url.pathname.startsWith("/_next/")) {
+    event.respondWith(networkFirst());
+    return;
+  }
+
+  if (url.pathname.startsWith("/icons/") || url.pathname === "/sw.js") {
+    event.respondWith(networkFirst());
   }
 });

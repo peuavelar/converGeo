@@ -56,3 +56,28 @@ export function insetRing(
   );
   return [...scaled, scaled[0]];
 }
+
+/** Recorte visual da península de Salvador (pitch) — fora fica a baía. */
+export function inSalvadorPitchFrame(lat: number, lng: number): boolean {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+  if (lat < -13.015 || lat > -12.84) return false;
+  if (lng < -38.545 || lng > -38.355) return false;
+  if (lng < -38.518 && lat > -12.925) return false;
+  return true;
+}
+
+export function keepHeatmapHexes<T extends { lat?: number; lng?: number }>(
+  rows: T[],
+  scoreOf: (row: T) => number,
+  max = 160,
+): T[] {
+  const land = rows.filter((r) =>
+    inSalvadorPitchFrame(Number(r.lat), Number(r.lng)),
+  );
+  const pool = land.length ? land : rows;
+  const sorted = [...pool].sort((a, b) => scoreOf(b) - scoreOf(a));
+  const cut = sorted.slice(0, max);
+  if (cut.length < 8) return cut;
+  const { min, max: hi } = scoreRange(cut.map(scoreOf));
+  return cut.filter((row) => relativeT(scoreOf(row), min, hi) >= 0.08);
+}

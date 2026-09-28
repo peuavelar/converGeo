@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { heatmapFill, insetRing, relativeT, scoreRange } from "./hexStyle";
+import { heatmapFill, insetRing, inSalvadorPitchFrame, keepHeatmapHexes, relativeT, scoreRange } from "./hexStyle";
 
 describe("hexStyle", () => {
   it("normaliza o ranking entre min e max", () => {
@@ -31,5 +31,20 @@ describe("hexStyle", () => {
     assert.ok(high[1] > 180 && high[2] > 160);
     const low = heatmapFill(0, true);
     assert.ok(low[0] > low[1]);
+  });
+
+  it("mantém Pituba e recusa a baía no recorte do pitch", () => {
+    assert.equal(inSalvadorPitchFrame(-13.0018, -38.4631), true);
+    assert.equal(inSalvadorPitchFrame(-12.88, -38.54), false);
+    const kept = keepHeatmapHexes(
+      [
+        { lat: -13.0018, lng: -38.4631, s: 8 },
+        { lat: -12.88, lng: -38.54, s: 9 },
+        { lat: -12.98, lng: -38.47, s: 3 },
+      ],
+      (r) => r.s,
+      10,
+    );
+    assert.ok(kept.every((r) => inSalvadorPitchFrame(r.lat, r.lng)));
   });
 });

@@ -1,7 +1,7 @@
 /** Ordem correta de extração no modo Negócio. */
 const STEPS = [
   { n: "1", title: "Escolha o segmento", detail: "É o recorte dos dados (CNAE)." },
-  { n: "2", title: "Abra o Raio-X", detail: "Carrega os 300 melhores hexágonos." },
+  { n: "2", title: "Abra o Raio-X", detail: "Carrega os melhores hexágonos no mapa." },
   { n: "3", title: "Filtre a nota, se quiser", detail: "Corta a matriz antes de baixar." },
   { n: "4", title: "Exporte o CSV", detail: "Matriz do mapa — não comece pelo endereço." },
 ] as const;

@@ -26,6 +26,7 @@ import {
   toggleCappedItem,
 } from "./utils/compareList";
 import { getDynamicScore } from "./utils/dynamicScore";
+import { keepHeatmapHexes } from "../lib/negocio/hexStyle";
 import { downloadHexCsv } from "./utils/exportHexCsv";
 import { useMapCamera, useNegocioHexData } from "./hooks/useNegocioMap";
 import { useNearbyPlaces } from "./hooks/useNearbyPlaces";
@@ -502,7 +503,11 @@ export default function App() {
 
   const visibleHexData =
     viewMode === "heatmap"
-      ? hexData.filter((d) => scoreOf(d) >= minHeatmapScore)
+      ? keepHeatmapHexes(
+          hexData.filter((d) => scoreOf(d) >= minHeatmapScore),
+          scoreOf,
+          160,
+        )
       : hexData;
 
   const layers = useMemo(() => {
@@ -757,10 +762,11 @@ export default function App() {
         mode === "negocio"
           ? {
               ...vs,
-              longitude: -38.4,
-              latitude: -12.92,
-              zoom: 11.1,
-              pitch: 35,
+              longitude: -38.475,
+              latitude: -12.985,
+              zoom: 12.15,
+              pitch: 48,
+              bearing: -14,
               transitionDuration: 900,
               transitionInterpolator: new FlyToInterpolator(),
             }

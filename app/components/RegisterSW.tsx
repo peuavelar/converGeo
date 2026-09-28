@@ -24,7 +24,11 @@ export default function RegisterSW() {
 
     const register = async () => {
       try {
-        await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+        const reg = await navigator.serviceWorker.register("/sw.js", {
+          scope: "/",
+          updateViaCache: "none",
+        });
+        await reg.update();
       } catch {
         // silencioso — PWA é opcional
       }

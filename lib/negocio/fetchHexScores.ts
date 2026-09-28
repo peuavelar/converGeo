@@ -22,7 +22,10 @@ function apiBase(): string {
 
 async function jsonGet(url: string): Promise<Record<string, unknown> | null> {
   try {
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
     if (!res.ok) return null;
     const data = (await res.json()) as Record<string, unknown>;
     if (!data || typeof data !== "object" || "detail" in data) return null;
@@ -83,7 +86,7 @@ export async function fetchNegocioHex(opts: {
   const { viewMode, segment, lastCoordinate, compareLocations } = opts;
 
   if (viewMode === "heatmap" || viewMode === "top") {
-    const limit = viewMode === "heatmap" ? 300 : 5;
+    const limit = viewMode === "heatmap" ? 180 : 5;
     const data = await jsonGet(
       `${base}/top?segmento=${encodeURIComponent(segment)}&limit=${limit}`,
     );

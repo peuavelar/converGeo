@@ -10,7 +10,7 @@ Não comece pelo campo de endereço. O endereço é análise de **um** ponto. A 
 1. **Abrir meu Negócio** (topo).
 2. Confirme o mapa escuro (botão *Modo noturno* se estiver claro).
 3. **Segmento** — recorte CNAE (ex.: Restaurantes, Farmácia). Sem isso a matriz é de outro negócio.
-4. **Raio-X** — pede os 300 melhores hexágonos no Postgres (`/api/negocio/top`).
+4. **Raio-X** — pede os melhores hexágonos no Postgres (`/api/negocio/top`).
 5. Opcional: **Filtro de nota mínima** para enxugar o conjunto.
 6. **Exportar Matriz (CSV)** — `ID_H3`, localização, nota ponderada, demografia, saturação, fluxo.
 

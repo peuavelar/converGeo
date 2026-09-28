@@ -116,8 +116,13 @@ export function useNegocioHexData(opts: {
         try {
           const res = await fetch(
             `/api/geo/reverse?lat=${hex.lat}&lng=${hex.lng}`,
-            { headers: { Accept: "application/json" } },
+            { headers: { Accept: "application/json" }, cache: "no-store" },
           );
+          if (!res.ok) {
+            next[hex.h3_index] = "Área Analisada";
+            updated = true;
+            continue;
+          }
           const data = (await res.json()) as {
             neighbourhood?: string;
             suburb?: string;

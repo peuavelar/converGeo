@@ -211,20 +211,26 @@ export function buildNegocioLayers(o: NegocioLayerOpts) {
       data: o.visibleHexData,
       pickable: true,
       extruded: true,
-      elevationScale: 28,
+      elevationScale: 22,
       stroked: true,
       filled: true,
       wireframe: false,
-      lineWidthMinPixels: 0.6,
-      lineWidthMaxPixels: 1.2,
-      getPolygon: (d: { h3_index: string }) => h3ToLngLatRing(d.h3_index, 0.82),
+      lineWidthMinPixels: 0.5,
+      lineWidthMaxPixels: 1.1,
+      material: {
+        ambient: 0.38,
+        diffuse: 0.72,
+        shininess: 40,
+        specularColor: [80, 110, 130],
+      },
+      getPolygon: (d: { h3_index: string }) => h3ToLngLatRing(d.h3_index, 0.76),
       getElevation: (d: {
         breakdown?: {
           estrutural?: number;
           macroeconomico?: number;
           comportamental?: number;
         };
-      }) => 40 + relativeT(score(d), min, max) * 220,
+      }) => 12 + relativeT(score(d), min, max) * 110,
       getFillColor: (d: {
         breakdown?: {
           estrutural?: number;
@@ -241,7 +247,7 @@ export function buildNegocioLayers(o: NegocioLayerOpts) {
         return heatmapFill(relativeT(score(d), min, max), dark);
       },
       getLineColor: () =>
-        dark ? [8, 14, 24, 160] : [255, 255, 255, 90],
+        dark ? [210, 230, 240, 55] : [255, 255, 255, 90],
       updateTriggers: {
         getElevation: [demografia, mercado, fluxo, min, max],
         getFillColor: [demografia, mercado, fluxo, o.colorMode, dark, min, max],
