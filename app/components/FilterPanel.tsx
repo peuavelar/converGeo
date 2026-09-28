@@ -8,6 +8,7 @@ import {
   COMMERCIAL_PROPERTY_TYPES,
   type PropertyType,
 } from "../utils/realEstate";
+import ExtractTutorial from "./ExtractTutorial";
 
 interface FilterPanelProps {
   searchQuery: string;
@@ -46,6 +47,8 @@ export default function FilterPanel(props: FilterPanelProps) {
 
   return (
     <div className="flex flex-col gap-3.5 print:hidden">
+      <ExtractTutorial />
+
       <div className="rounded-xl border border-[#e6e6ea] bg-white px-3 py-2.5 shadow-[0_1px_0_rgba(10,10,11,0.04)]">
         <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#8a8a93]">
           Cobertura
@@ -53,6 +56,53 @@ export default function FilterPanel(props: FilterPanelProps) {
         <p className="mt-0.5 text-xs font-semibold text-[#0a0a0b]">
           Salvador · Lauro de Freitas (RMS)
         </p>
+      </div>
+
+      <label className="block text-xs font-bold text-[#6a6a72]">
+        Segmento
+        <select
+          value={props.activeSegment}
+          onChange={(e) => props.setActiveSegment(e.target.value)}
+          className={`${fieldClass} font-semibold`}
+        >
+          {BUSINESS_SEGMENTS.map((segment) => (
+            <option key={segment.value} value={segment.value}>
+              {segment.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="-mt-1 text-[11px] text-[#8a8a93]">
+        CNAE ref.:{" "}
+        <span className="font-semibold text-[#6a6a72]">
+          {BUSINESS_SEGMENTS.find((s) => s.value === props.activeSegment)
+            ?.cnae ?? "—"}
+        </span>
+      </p>
+
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={props.handleTop5Click}
+          className={`min-h-[44px] rounded-xl px-3 py-2.5 text-sm font-bold transition active:scale-[0.98] ${
+            props.viewMode === "top"
+              ? "bg-[#0a0a0b] text-white shadow-md"
+              : "border border-[#e6e6ea] bg-white text-[#0a0a0b] hover:border-[#0a0a0b]"
+          }`}
+        >
+          Top 5
+        </button>
+        <button
+          type="button"
+          onClick={props.handleHeatmapClick}
+          className={`min-h-[44px] rounded-xl px-3 py-2.5 text-sm font-bold transition active:scale-[0.98] ${
+            props.viewMode === "heatmap"
+              ? "bg-[#0a0a0b] text-white shadow-md"
+              : "border border-[#e6e6ea] bg-white text-[#0a0a0b] hover:border-[#0a0a0b]"
+          }`}
+        >
+          Raio-X
+        </button>
       </div>
 
       <form onSubmit={props.handleAddressSearch} className="space-y-1.5">
@@ -105,28 +155,6 @@ export default function FilterPanel(props: FilterPanelProps) {
         </select>
       </label>
 
-      <label className="block text-xs font-bold text-[#6a6a72]">
-        Segmento
-        <select
-          value={props.activeSegment}
-          onChange={(e) => props.setActiveSegment(e.target.value)}
-          className={`${fieldClass} font-semibold`}
-        >
-          {BUSINESS_SEGMENTS.map((segment) => (
-            <option key={segment.value} value={segment.value}>
-              {segment.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <p className="-mt-1 text-[11px] text-[#8a8a93]">
-        CNAE ref.:{" "}
-        <span className="font-semibold text-[#6a6a72]">
-          {BUSINESS_SEGMENTS.find((s) => s.value === props.activeSegment)
-            ?.cnae ?? "—"}
-        </span>
-      </p>
-
       <details className="group rounded-xl border border-[#e6e6ea] bg-white open:shadow-sm">
         <summary className="cursor-pointer list-none px-3 py-2.5 text-sm font-bold text-[#0a0a0b] marker:content-none [&::-webkit-details-marker]:hidden">
           <span className="flex items-center justify-between gap-2">
@@ -161,31 +189,6 @@ export default function FilterPanel(props: FilterPanelProps) {
           ))}
         </div>
       </details>
-
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={props.handleTop5Click}
-          className={`min-h-[44px] rounded-xl px-3 py-2.5 text-sm font-bold transition active:scale-[0.98] ${
-            props.viewMode === "top"
-              ? "bg-[#0a0a0b] text-white shadow-md"
-              : "border border-[#e6e6ea] bg-white text-[#0a0a0b] hover:border-[#0a0a0b]"
-          }`}
-        >
-          Top 5
-        </button>
-        <button
-          type="button"
-          onClick={props.handleHeatmapClick}
-          className={`min-h-[44px] rounded-xl px-3 py-2.5 text-sm font-bold transition active:scale-[0.98] ${
-            props.viewMode === "heatmap"
-              ? "bg-[#0a0a0b] text-white shadow-md"
-              : "border border-[#e6e6ea] bg-white text-[#0a0a0b] hover:border-[#0a0a0b]"
-          }`}
-        >
-          Raio-X
-        </button>
-      </div>
 
       {/* Comparação A/B — digitação + botão executa */}
       <div className="space-y-2.5 rounded-2xl border border-[#e6e6ea] bg-white p-3 shadow-[0_8px_24px_rgba(10,10,11,0.04)]">

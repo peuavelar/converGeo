@@ -112,3 +112,4 @@ npm run engine:test
 | [docs/BENCHMARKS.md](./docs/BENCHMARKS.md) | Score calibrado (A+S1) |
 | [docs/RELEASE_1.2.0.md](./docs/RELEASE_1.2.0.md) | Release notes 1.2.0 |
 | [docs/BANCO_BOOTSTRAP.md](./docs/BANCO_BOOTSTRAP.md) | Postgres `convergeo` + `DATABASE_URL` na Vercel |
+| [docs/TUTORIAL_EXTRACAO.md](./docs/TUTORIAL_EXTRACAO.md) | Ordem correta: segmento → Raio-X → CSV |
