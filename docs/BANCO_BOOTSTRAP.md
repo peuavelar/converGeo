@@ -48,27 +48,26 @@ As API keys **não** substituem `DATABASE_URL`. O mapa H3 só enche depois do Po
 
 Handshake da API (com `.env.local`): `GET /api/supabase/health`.
 
-## 0b. Conectar ao Postgres (ainda falta)
+## 0b. Conectar ao Postgres
 
-Neste ambiente **não há `DATABASE_URL`**. Sem a URI o handshake não roda.
+O schema `convergeo` já está no projeto `jhbzotgjpfxfajvjgnuu`
+(1077 hexágonos, 18309 scores, 17 segmentos).
 
-No dashboard do projeto novo:
+URI Session (trocar `SENHA`; `!` → `%21`, `@` → `%40`):
 
-1. **Project Settings → Database → Connect** (ou o botão Connect).  
-2. Copiar a URI **Session pooler** (`*.pooler.supabase.com:5432`) **ou Direct** (`db.<ref>.supabase.co:5432`).  
-   Evite Transaction mode (`:6543`) para migrate/bootstrap.  
-3. Database → Extensions → ligar **postgis**.  
-4. Colar a URI em `DATABASE_URL` (secret do Cursor / Render). Não commitar.  
-5. Conferir:
+```
+postgresql://postgres.jhbzotgjpfxfajvjgnuu:SENHA@aws-0-ca-central-1.pooler.supabase.com:5432/postgres?sslmode=require
+```
+
+Evite Transaction mode (`:6543`). Não commitar a URI.
 
 ```bash
 cd engine
-export DATABASE_URL='postgresql://postgres.<ref>:<senha>@aws-0-sa-east-1.pooler.supabase.com:5432/postgres'
+export DATABASE_URL='postgresql://postgres.jhbzotgjpfxfajvjgnuu:SENHA@aws-0-ca-central-1.pooler.supabase.com:5432/postgres?sslmode=require'
 python -m convergeo_engine.cli db-ping
 ```
 
-Esperado: `{"ok": true, "mode": "session"|"direct", "postgis": "..."}`.  
-Só depois: `migrate` + `bootstrap`.
+Esperado: `{"ok": true, "mode": "session"|"direct", "postgis": "..."}`.
 
 ## Atalho sem URI (SQL Editor)
 
@@ -95,7 +94,8 @@ python -m convergeo_engine.cli export-sql --skip-osm
 postgresql://postgres.jhbzotgjpfxfajvjgnuu:SENHA@aws-0-ca-central-1.pooler.supabase.com:5432/postgres?sslmode=require
 ```
 
-Colar em `DATABASE_URL` **só** no Render — nunca no git.  
+Colar a mesma URI em `DATABASE_URL` no **Render** (motor Python) e na **Vercel** (BFF). Nunca no git.
+
 4. No Render, o start deve ser:
 
 ```bash
@@ -104,5 +104,25 @@ python -m convergeo_engine.cli migrate && python -m convergeo_engine.cli bootstr
 
 `bootstrap` é idempotente (UPSERT). Overpass pode falhar; a grade e os scores (neutros 5.0 se não houver POI) ainda gravam.
 
-5. Conferir `GET https://<render>/health` com `hexagonos` > 0 e `scores` > 0.  
-6. Vercel: `BACKEND_ORIGIN` = URL do Render. O BFF já faz fallback demo se o motor cair.
+5. Conferir `GET https://<render>/health` com `hexagonos` > 0 e `scores` > 0.
+
+## 4. Vercel (ciclo do mapa)
+
+O BFF (`/api/negocio/score` e `/top`, rewrites `/backend/*`) lê o Postgres **antes** do Render. Sem `DATABASE_URL` na Vercel o mapa cai no motor remoto e, se esse falhar, no demo.
+
+1. Vercel → projeto **convergeo-front** → Settings → Environment Variables.  
+2. Criar `DATABASE_URL` (Production + Preview) com a URI Session **percent-encoded** e `sslmode=require`.  
+3. `BACKEND_ORIGIN` continua opcional (Render). Já não é obrigatório para o heatmap.  
+4. Redeploy da Production (a variável só entra no próximo build).  
+5. Conferir:
+
+```bash
+curl -sS https://convergeo-front.vercel.app/api/negocio/health
+# {"status":"ok","version":"1.3.2","motor":"postgres","demo":false}
+
+curl -sSI "https://convergeo-front.vercel.app/api/negocio/top?segmento=food_service&limit=3"
+# X-ConverGeo-Source: postgres
+```
+
+Ordem de resolução: **postgres → Render → demo**.  
+`GET /api/negocio/health` com `"motor":"postgres"` significa que o banner demo some.

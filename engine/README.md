@@ -28,6 +28,6 @@ export RF_MUNICIPIOS_CSV=/dados/municipios.csv
 python -m convergeo_engine.cli etl all
 ```
 
-Deploy: o frontend Vercel continua igual. O motor sobe no **Render** (serviço Web, Docker ou `uvicorn`), com `DATABASE_URL` do Supabase (Postgres + PostGIS). Health: `GET /health`.
+Deploy: o BFF da Vercel lê `DATABASE_URL` (schema `convergeo`) em `/api/negocio/score` e `/top`. O motor Python no **Render** usa a mesma URI para ETL/`GET /health`. Ver `docs/BANCO_BOOTSTRAP.md`.
 
 Contrato legado do modo Negócio: `GET /score` e `GET /top` (v1). Marketplace: `/v2/*` atrás de `NEXT_PUBLIC_MARKETPLACE_SOURCE`.

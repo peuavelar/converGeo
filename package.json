@@ -10,7 +10,7 @@
     "deploy": "vercel --prod",
     "seed:benchmarks": "tsx scripts/seed-benchmarks.ts",
     "compare:scores": "tsx scripts/compare-opportunity-scores.ts",
-    "test:benchmarks": "tsx --test lib/benchmarks/rules/rules.test.ts lib/benchmarks/calibrate.test.ts lib/negocio/demoScores.test.ts lib/negocio/clientHexFallback.test.ts lib/negocio/hexPolygon.test.ts",
+    "test:benchmarks": "tsx --test lib/benchmarks/rules/rules.test.ts lib/benchmarks/calibrate.test.ts lib/negocio/demoScores.test.ts lib/negocio/clientHexFallback.test.ts lib/negocio/hexPolygon.test.ts lib/negocio/pgScores.test.ts",
     "engine:test": "python3 -m pytest engine/tests -q"
   },
   "dependencies": {
@@ -22,6 +22,7 @@
     "h3-js": "^4.5.0",
     "maplibre-gl": "^5.24.0",
     "next": "16.2.10",
+    "pg": "^8.23.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-map-gl": "^8.1.1"
@@ -29,6 +30,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

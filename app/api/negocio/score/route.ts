@@ -14,6 +14,11 @@ export async function GET(request: Request) {
       { status: 400, headers: { "Cache-Control": "no-store" } },
     );
   }
-  const { body } = await resolveScore(lat, lng, segmento);
-  return Response.json(body, { headers: { "Cache-Control": "no-store" } });
+  const { body, source } = await resolveScore(lat, lng, segmento);
+  return Response.json(body, {
+    headers: {
+      "Cache-Control": "no-store",
+      "X-ConverGeo-Source": source,
+    },
+  });
 }
