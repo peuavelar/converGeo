@@ -89,7 +89,13 @@ python -m convergeo_engine.cli export-sql --skip-osm
 
 1. Projeto Supabase novo (região `sa-east-1`).  
 2. Database → Extensions → ligar **postgis**.  
-3. Copiar a URI (pooler 6543 ou direto 5432) para `DATABASE_URL` **só** no Render — nunca no git.  
+3. URI Session deste projeto (trocar `SENHA`; se a senha tiver `@ # %` etc., percent-encode):
+
+```
+postgresql://postgres.jhbzotgjpfxfajvjgnuu:SENHA@aws-0-ca-central-1.pooler.supabase.com:5432/postgres?sslmode=require
+```
+
+Colar em `DATABASE_URL` **só** no Render — nunca no git.  
 4. No Render, o start deve ser:
 
 ```bash
