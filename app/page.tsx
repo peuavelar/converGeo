@@ -178,7 +178,7 @@ export default function App() {
   }, [panelOpen, marketplaceOpen, appMode, imovelTool]);
 
   const [currentStyle, setCurrentStyle] =
-    useState<keyof typeof MAP_STYLES>("voyager");
+    useState<keyof typeof MAP_STYLES>("dark");
   const [activeSegment, setActiveSegment] = useState("food_service");
   const { viewState, setViewState, flyTo, flyToMid } = useMapCamera(appMode);
   const [viewMode, setViewMode] = useState<
@@ -523,6 +523,7 @@ export default function App() {
       competitorPins,
       colorMode,
       weights,
+      darkMap: currentStyle === "dark",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -540,6 +541,7 @@ export default function App() {
     competitorPins,
     colorMode,
     weights,
+    currentStyle,
   ]);
 
   const showPinCard =
@@ -560,6 +562,7 @@ export default function App() {
         sideRailTab,
         pinCardOpen,
         imovelTool,
+        darkMap: currentStyle === "dark",
       })}
     >
       <DeckGL

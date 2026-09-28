@@ -22,6 +22,7 @@ import {
 } from "../utils/mapMarkerIcons";
 import { getDynamicScore, type ScoreWeights } from "../utils/dynamicScore";
 import type { NegocioHex } from "../../lib/negocio/fetchHexScores";
+import { heatmapFill, relativeT, scoreRange } from "../../lib/negocio/hexStyle";
 
 type ImovelLayerOpts = {
   nearbyCenter: LatLng | null;
@@ -189,12 +190,20 @@ type NegocioLayerOpts = {
   competitorPins: LatLng[];
   colorMode: "total" | "ocean";
   weights: ScoreWeights;
+  darkMap?: boolean;
 };
 
 export function buildNegocioLayers(o: NegocioLayerOpts) {
   const { demografia, mercado, fluxo } = o.weights;
-  const score = (d: { breakdown?: { estrutural?: number; macroeconomico?: number; comportamental?: number }; h3_index?: string }) =>
-    getDynamicScore(d, o.weights);
+  const dark = o.darkMap !== false;
+  const score = (d: {
+    breakdown?: {
+      estrutural?: number;
+      macroeconomico?: number;
+      comportamental?: number;
+    };
+  }) => getDynamicScore(d, o.weights);
+  const { min, max } = scoreRange(o.visibleHexData.map(score));
 
   return [
     new PolygonLayer({
@@ -202,30 +211,40 @@ export function buildNegocioLayers(o: NegocioLayerOpts) {
       data: o.visibleHexData,
       pickable: true,
       extruded: true,
-      elevationScale: 50,
+      elevationScale: 28,
       stroked: true,
       filled: true,
       wireframe: false,
-      lineWidthMinPixels: 1,
-      getPolygon: (d: { h3_index: string }) => h3ToLngLatRing(d.h3_index),
-      getElevation: (d: { breakdown?: { estrutural?: number; macroeconomico?: number; comportamental?: number } }) =>
-        score(d) * 10,
-      getFillColor: (d: { breakdown?: { estrutural?: number; macroeconomico?: number; comportamental?: number } }) => {
+      lineWidthMinPixels: 0.6,
+      lineWidthMaxPixels: 1.2,
+      getPolygon: (d: { h3_index: string }) => h3ToLngLatRing(d.h3_index, 0.82),
+      getElevation: (d: {
+        breakdown?: {
+          estrutural?: number;
+          macroeconomico?: number;
+          comportamental?: number;
+        };
+      }) => 40 + relativeT(score(d), min, max) * 220,
+      getFillColor: (d: {
+        breakdown?: {
+          estrutural?: number;
+          macroeconomico?: number;
+          comportamental?: number;
+        };
+      }) => {
         if (o.colorMode === "ocean") {
           const s = d.breakdown?.macroeconomico || 0;
-          if (s >= 7) return [14, 165, 233, 200];
-          if (s >= 4) return [168, 85, 247, 200];
-          return [239, 68, 68, 200];
+          if (s >= 7) return [56, 189, 248, 210];
+          if (s >= 4) return [167, 139, 250, 200];
+          return [244, 63, 94, 190];
         }
-        const s = score(d);
-        if (s >= 7) return [16, 185, 129, 200];
-        if (s >= 4) return [245, 158, 11, 200];
-        return [239, 68, 68, 200];
+        return heatmapFill(relativeT(score(d), min, max), dark);
       },
-      getLineColor: () => [255, 255, 255, 80],
+      getLineColor: () =>
+        dark ? [8, 14, 24, 160] : [255, 255, 255, 90],
       updateTriggers: {
-        getElevation: [demografia, mercado, fluxo],
-        getFillColor: [demografia, mercado, fluxo, o.colorMode],
+        getElevation: [demografia, mercado, fluxo, min, max],
+        getFillColor: [demografia, mercado, fluxo, o.colorMode, dark, min, max],
         getPolygon: [o.visibleHexData.length],
       },
     }),
@@ -254,9 +273,10 @@ export function mapPaneClassName(opts: {
   sideRailTab: string;
   pinCardOpen: boolean;
   imovelTool: string;
+  darkMap?: boolean;
 }) {
-  const base =
-    "map-touch relative min-h-0 min-w-0 bg-[#e8e8ed] order-1 lg:order-2";
+  const bg = opts.darkMap ? "bg-[#0a1220]" : "bg-[#e8e8ed]";
+  const base = `map-touch relative min-h-0 min-w-0 ${bg} order-1 lg:order-2`;
   const { panelOpen, marketplaceOpen, sideRailTab, pinCardOpen, imovelTool } =
     opts;
 
